@@ -1,0 +1,365 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── react-datepicker overrides ───────────────────────────────────────────── */
+.react-datepicker-popper {
+  z-index: 9999 !important;
+}
+.react-datepicker__input-time-container {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 6px 8px 8px !important;
+  float: none !important;
+  border-top: 1px solid #e2e8f0;
+  clear: both;
+}
+.react-datepicker__time-input-container {
+  display: block !important;
+  width: 100% !important;
+}
+.react-datepicker__time-input {
+  display: block !important;
+  width: 100% !important;
+  overflow: visible !important;
+}
+.react-datepicker__time-input input {
+  /* hide default input if any */
+  display: none;
+}
+/* let the popper grow tall enough for the custom spinner */
+.react-datepicker__triangle { display: none; }
+
+/* widen the calendar so the spinner row fits without clipping */
+.rdp-wide .react-datepicker {
+  min-width: 290px;
+}
+.rdp-wide .react-datepicker__month-container {
+  float: none;
+}
+.rdp-wide .react-datepicker__input-time-container {
+  width: 100% !important;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #ffffff;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark mode body */
+body.dark,
+.dark body {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Hide Scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Smooth Transitions */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+button {
+  transition: all 0.2s ease;
+}
+
+/* Loading Animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Animate Fade In for Modal */
+@keyframes animateFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: animateFadeIn 0.3s ease-out;
+}
+
+/* Scale Up Animation for Modal */
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.3s ease-out;
+}
+
+/* Bounce Animation for Icons */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.icon-bounce:hover {
+  animation: bounce 0.6s ease-in-out;
+}
+
+/* Slide Up Animation */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out backwards;
+}
+
+/* Float Animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Card Hover Effect */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Button Styles */
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 inline-flex items-center justify-center gap-2;
+}
+
+.btn-primary {
+  @apply bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800;
+}
+
+.btn-secondary {
+  @apply bg-secondary-600 text-white hover:bg-secondary-700 active:bg-secondary-800;
+}
+
+.btn-success {
+  @apply bg-success-600 text-white hover:bg-success-700 active:bg-success-800;
+}
+
+.btn-outline {
+  @apply border-2 border-gray-300 text-gray-700 hover:border-primary-500 hover:text-primary-700 hover:bg-primary-50;
+}
+
+/* Badge Styles */
+.badge {
+  @apply inline-flex items-center justify-center px-2 py-1 text-xs font-semibold rounded-full;
+}
+
+.badge-primary {
+  @apply bg-primary-100 text-primary-700;
+}
+
+.badge-success {
+  @apply bg-success-100 text-success-700;
+}
+
+.badge-warning {
+  @apply bg-warning-100 text-warning-700;
+}
+
+.badge-danger {
+  @apply bg-danger-100 text-danger-700;
+}
+
+/* Animated Gradient Background */
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-x {
+  animation: gradient-x 15s ease infinite;
+}
+
+/* Landing User Guides - opening book hover feel */
+.landing-guides-grid {
+  perspective: 1400px;
+}
+
+.landing-guide-book-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transform-origin: left center;
+  will-change: transform, box-shadow;
+  transition: transform 340ms cubic-bezier(.22,.8,.3,1), box-shadow 340ms cubic-bezier(.22,.8,.3,1), border-color 280ms ease, background-color 280ms ease;
+}
+
+.landing-guide-book-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.05) 55%, rgba(0,0,0,0.08) 100%);
+  transform: translateZ(1px);
+  transition: opacity 280ms ease;
+}
+
+.landing-guide-book-card::after {
+  content: '';
+  position: absolute;
+  inset: auto 10px -12px 10px;
+  height: 20px;
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  filter: blur(8px);
+  background: rgba(15, 23, 42, 0.25);
+  transform: translateZ(-1px);
+  transition: opacity 280ms ease, transform 340ms cubic-bezier(.22,.8,.3,1);
+}
+
+.landing-guide-book-card:hover {
+  transform: translateY(-8px) rotateY(-14deg) rotateX(4deg) scale(1.015);
+  box-shadow: 0 24px 38px rgba(15, 23, 42, 0.2);
+}
+
+.landing-guide-book-card:hover::before {
+  opacity: 1;
+}
+
+.landing-guide-book-card:hover::after {
+  opacity: 1;
+  transform: translateY(3px) translateZ(-1px);
+}
+
+.landing-guide-book-icon-wrap {
+  transform-style: preserve-3d;
+  transition: transform 320ms cubic-bezier(.22,.8,.3,1), box-shadow 280ms ease;
+}
+
+.landing-guide-book-icon {
+  transition: transform 320ms cubic-bezier(.22,.8,.3,1);
+}
+
+.landing-guide-date-badge {
+  transform-style: preserve-3d;
+  transition: transform 320ms cubic-bezier(.22,.8,.3,1), box-shadow 280ms ease;
+}
+
+.landing-guide-readmore {
+  transition: transform 220ms ease, letter-spacing 220ms ease;
+}
+
+.landing-guide-book-card:hover .landing-guide-book-icon-wrap {
+  transform: translateZ(14px) rotateY(22deg) translateX(4px);
+  box-shadow: 0 10px 20px rgba(220, 38, 38, 0.24);
+}
+
+.landing-guide-book-card:hover .landing-guide-book-icon {
+  transform: translateZ(8px) scale(1.1) translateX(2px);
+}
+
+.landing-guide-book-card:hover .landing-guide-date-badge {
+  transform: translateZ(12px) translateY(-2px) rotateY(-8deg);
+  box-shadow: 0 10px 18px rgba(30, 58, 138, 0.32);
+}
+
+.landing-guide-book-card:hover .landing-guide-readmore {
+  transform: translateY(-1px);
+  letter-spacing: 0.01em;
+}

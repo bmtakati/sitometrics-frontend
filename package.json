@@ -1,0 +1,50 @@
+{
+  "name": "mofi-react-admin",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Modern React Admin Dashboard - Mofi Template",
+  "dependencies": {
+    "@headlessui/react": "^1.7.18",
+    "classnames": "^2.5.1",
+    "date-fns": "^4.1.0",
+    "exceljs": "^4.4.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.0",
+    "jspdf-autotable": "^5.0.7",
+    "prop-types": "^15.8.1",
+    "quill": "^2.0.2",
+    "react": "^18.3.1",
+    "react-datepicker": "^9.1.0",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.0.1",
+    "react-quilljs": "^2.0.4",
+    "react-router-dom": "^6.22.0",
+    "recharts": "^3.8.0",
+    "sweetalert2": "^11.26.22"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.2",
+    "autoprefixer": "^10.4.18",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "vite": "^8.0.16"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
