@@ -1,251 +1,126 @@
-# Mofi React Admin Dashboard
+# SITOMETRICS — React Developer Guide
 
-A modern, beautiful React admin dashboard built with React, Vite, and Tailwind CSS. This project features a clean white sidebar, modern color scheme, and fully responsive design.
+Technical reference for working on the SITOMETRICS frontend.
 
-## ✨ Features
-
-### Landing Page
-- 🎬 **Automated Image Slider**: Beautiful hero section with auto-rotating slides
-- 📊 **Stats Section**: Impressive statistics with animated counters
-- 🎯 **Services Section**: Showcase features with icons and descriptions
-- 🔐 **Login Modal**: Elegant modal dialog for authentication
-- 🌓 **Dark/Light Mode Toggle**: Complete theme switching support
-- 🖥️ **Fullscreen Toggle**: Immersive fullscreen experience
-- 📱 **Fully Responsive**: Perfect on all devices
-
-### Admin Dashboard
-- 🎨 **Modern Design**: Clean and attractive UI with beautiful color gradients
-- 🎯 **White Sidebar**: Professional white sidebar with colorful icons
-- 📱 **Fully Responsive**: Works perfectly on all devices
-- ⚡ **Fast Performance**: Built with Vite for lightning-fast development
-- 🎭 **Beautiful Components**: Pre-built components with smooth animations
-- 🎨 **Tailwind CSS**: Utility-first CSS framework for rapid development
-- 🔄 **React Router**: Client-side routing for seamless navigation
-- 📊 **Dashboard**: Feature-rich dashboard with stats, charts, and tables
-
-## 🎨 Color Scheme
-
-The template uses a modern color palette:
-- **Primary**: Blue shades (#0ea5e9)
-- **Secondary**: Purple/Pink shades (#d946ef)
-- **Success**: Green shades (#22c55e)
-- **Warning**: Orange shades (#f97316)
-- **Danger**: Red shades (#ef4444)
-
-## 📁 Project Structure
+## Architecture
 
 ```
-frontend/
-├── public/
-├── src/
-│   ├── components/
-│   │   ├── Header/
-│   │   │   └── Header.jsx
-│   │   ├── Sidebar/
-│   │   │   └── Sidebar.jsx
-│   │   └── Layout/
-│   │       └── Layout.jsx
-│   ├── pages/
-│   │   ├── LandingPage.jsx  # Public landing page
-│   │   └── Dashboard.jsx    # Admin dashboard
-│   ├── App.jsx
-│   ├── main.jsx
-│   └── index.css
-├── index.html
-├── package.json
-├── vite.config.js
-├── tailwind.config.js
-└── postcss.config.js
+Browser → React (Vite) → REST API (Laravel /api)
+                ↓
+         AuthContext (JWT in localStorage)
+                ↓
+         Protected routes + permission checks
+                ↓
+         CRUDPage / custom pages → useApiCrud → fetch API
 ```
 
-## 🌐 Pages
+- **Entry:** `src/main.jsx` → `App.jsx`
+- **Auth:** `src/context/AuthContext.jsx` stores JWT and user; `ProtectedRoute` guards app routes
+- **Permissions:** `hasPermission(user, 'view-items')` in route definitions and components
+- **API base:** `VITE_API_BASE_URL` from `.env`
 
-### Landing Page (`/`)
-The landing page is the entry point for the School Quality Assurance System (SQAS):
+## Key directories
 
-**Features:**
-- **Hero Slider**: Automated image carousel with smooth transitions
-- **Navigation Bar**: Fixed header with logo, menu links, and action buttons
-- **Stats Section**: Key metrics with colorful icons
-- **Services Section**: 6 comprehensive service cards
-- **CTA Section**: Call-to-action with gradient background
-- **Footer**: Complete footer with links and contact info
-- **Login Modal**: Beautiful modal for user authentication
-- **Theme Toggle**: Switch between light and dark modes
-- **Fullscreen Mode**: Toggle fullscreen view
-
-**Access:** Navigate to `http://localhost:3000/`
-
-### Dashboard (`/dashboard`)
-The admin dashboard for logged-in users:
-
-**Features:**
-- Statistics overview
-- Recent orders table
-- Activity feed
-- Top products
-- White sidebar navigation
-- Header with notifications and messages
-
-**Access:** Navigate to `http://localhost:3000/dashboard`
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js (v16 or higher)
-- npm or yarn
-
-### Installation
-
-1. Navigate to the project directory:
-```bash
-cd frontend
+```
+src/
+├── components/
+│   ├── Layout/           # Shell: sidebar, header, content area
+│   ├── Sidebar/          # Navigation menu
+│   ├── CRUDPage/         # Generic list + modal CRUD page
+│   ├── DataTable.jsx     # Table with sorting, pagination hooks
+│   ├── FormModal/        # Create/edit modal (two-column layout)
+│   ├── TableControls.jsx # Search + filter bar
+│   ├── SearchableSelect.jsx
+│   ├── PageHeader.jsx
+│   └── StatsCard.jsx
+├── hooks/
+│   └── useApiCrud.js     # Standard list/create/update/delete/fetch
+├── pages/
+│   ├── setup/            # Master data CRUD pages
+│   ├── procurement/      # Workflow pages (PR, LPO, GRN, …)
+│   └── LandingPage.jsx   # Public site
+└── utils/
+    ├── permissions.js
+    └── formFieldLayout.js
 ```
 
-2. Install dependencies:
+## Adding a setup CRUD page
+
+1. Create `src/pages/setup/YourEntity.jsx` using `CRUDPage` or `SetupPageTemplate`.
+2. Register the route in `App.jsx` with a permission check.
+3. Add a sidebar entry in `src/components/Sidebar/Sidebar.jsx`.
+4. Ensure the backend exposes matching `/api/your-entities` endpoints.
+
+Example pattern:
+
+```jsx
+<CRUDPage
+  title="Item Categories"
+  apiEndpoint="/item-categories"
+  permissionPrefix="item-categories"
+  columns={[...]}
+  formFields={[...]}
+/>
+```
+
+## useApiCrud
+
+The hook handles pagination, search, status filters (`active`, `inactive`, `trashed`), and CRUD operations.
+
+Filter query params sent to the API:
+
+- `status=active|inactive`
+- `trashed=only` (for deleted records)
+- `search=...`
+- `page`, `per_page`
+
+See [USEAPICRUD_GUIDE.md](src/hooks/USEAPICRUD_GUIDE.md).
+
+## Styling
+
+- **Tailwind CSS** with emerald/stone F&B theme
+- **Dark mode** via `useDarkMode` hook and `localStorage`
+- **Primary palette** in `tailwind.config.js` (`primary`, `success`, etc.)
+- Shared layout helpers: `PageHeader`, `StatsGrid`, `DataTable`
+
+## Vite configuration
+
+- Dev server: port **3000** (`vite.config.js`)
+- Proxies `/storage` to the Laravel backend for file previews
+- `%VITE_APP_NAME%` replaced in `index.html` at build time
+
+## Component guides
+
+| Guide | Topic |
+|-------|-------|
+| [CRUD_COMPONENTS_GUIDE.md](CRUD_COMPONENTS_GUIDE.md) | CRUD page overview |
+| [DATATABLE_GUIDE.md](src/components/DATATABLE_GUIDE.md) | DataTable API |
+| [FORMMODAL_GUIDE.md](src/components/FormModal/FORMMODAL_GUIDE.md) | Modal forms |
+| [USEAPICRUD_GUIDE.md](src/hooks/USEAPICRUD_GUIDE.md) | Data fetching hook |
+| [PAGEHEADER_GUIDE.md](src/components/PAGEHEADER_GUIDE.md) | Page headers |
+| [STATSCARD_GUIDE.md](src/components/STATSCARD_GUIDE.md) | Summary cards |
+
+## Local development
+
 ```bash
 npm install
-```
-
-3. Start the development server:
-```bash
+cp .env.example .env
 npm run dev
 ```
 
-4. Open your browser and visit:
-```
-http://localhost:3000
-```
+Sign in at `/landing` with a seeded backend user (see [backend README](../backend/README.md)).
 
-### Build for Production
+## Build & deploy
 
 ```bash
-npm run build
+npm run build    # output: dist/
+npm run preview  # local preview of dist/
 ```
 
-The built files will be in the `dist` directory.
+Serve `dist/` with any static host. Set `VITE_API_BASE_URL` to the production API URL before building.
 
-### Preview Production Build
+## Further reading
 
-```bash
-npm run preview
-```
-
-## 🎯 Key Components
-
-### Landing Page Component
-- **Image Slider**: Auto-rotating hero section with 3 slides
-- **Stats Cards**: 4 animated statistics with icons
-- **Services Grid**: 6 service cards with descriptions
-- **Login Modal**: Full-featured authentication modal
-- **Dark Mode**: Complete dark theme support
-- **Responsive Navigation**: Mobile-friendly menu
-
-### Header Component
-- Search functionality
-- Notifications dropdown
-- Messages dropdown
-- User profile menu
-- Theme toggle (dark/light mode)
-- Fullscreen toggle
-- Shopping cart
-- Link to landing page
-
-### Sidebar Component
-- **White Background**: Clean and professional white sidebar
-- **Colorful Icons**: Each menu item has a colorful icon with matching background
-- **Collapsible**: Can be collapsed for more space
-- **Responsive**: Mobile-friendly with overlay
-- **Multi-level Menu**: Support for nested menu items
-- **Pinned Items**: Quick access to frequently used pages
-
-### Dashboard
-- Statistics cards with trends
-- Recent orders table
-- Recent activity feed
-- Top products grid
-- Beautiful gradients and animations
-
-## 🎨 Customization
-
-### Colors
-
-Edit `tailwind.config.js` to customize colors:
-
-```javascript
-theme: {
-  extend: {
-    colors: {
-      primary: { ... },
-      secondary: { ... },
-      // Add your custom colors
-    }
-  }
-}
-```
-
-### Sidebar
-
-Edit `src/components/Sidebar/Sidebar.jsx` to modify menu items:
-
-```javascript
-const menuItems = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: FiHome,
-    path: '/',
-    color: 'text-primary-600',
-    bgColor: 'bg-primary-50',
-    pinned: true
-  },
-  // Add more menu items
-];
-```
-
-## 📱 Responsive Design
-
-- **Mobile**: < 768px - Sidebar becomes a drawer
-- **Tablet**: 768px - 1024px - Optimized layout
-- **Desktop**: > 1024px - Full sidebar visible
-
-## 🛠️ Technologies Used
-
-- **React 18**: Latest React features
-- **Vite**: Next-generation frontend tooling
-- **Tailwind CSS**: Utility-first CSS framework
-- **React Router**: Declarative routing
-- **React Icons**: Beautiful icon library
-- **PostCSS**: CSS transformations
-- **Autoprefixer**: Vendor prefix handling
-
-## 📝 Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-
-## 🎓 Learn More
-
-- [React Documentation](https://react.dev/)
-- [Vite Documentation](https://vitejs.dev/)
-- [Tailwind CSS Documentation](https://tailwindcss.com/)
-- [React Router Documentation](https://reactrouter.com/)
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 💬 Support
-
-For support, please contact the development team or open an issue in the repository.
-
----
-
-**Built with ❤️ using React and Tailwind CSS**
+- [Frontend README](README.md)
+- [Quick start](QUICKSTART.md)
+- [Landing page](LANDING_PAGE.md)
