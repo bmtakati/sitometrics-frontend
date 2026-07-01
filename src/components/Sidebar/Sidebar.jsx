@@ -61,12 +61,14 @@ import {
   FiRepeat,
   FiSend,
   FiCoffee,
-  FiTruck
+  FiTruck,
+  FiImage
 } from 'react-icons/fi';
 import SitometricsLogo from '../SitometricsLogo';
 import { useAuth } from '../../context/AuthContext';
 import { hasPermission } from '../../utils/permissions';
 import useDarkMode from '../../hooks/useDarkMode';
+import { setupMenuChildren } from '../../pages/setup/setupNav';
 
 const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
   const location = useLocation();
@@ -151,6 +153,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
       bgColor: 'bg-orange-50',
       pinned: true,
       children: [
+        { id: 'suppliers', label: 'Suppliers', path: '/procurement/suppliers', icon: FiTruck, color: 'text-blue-600' },
         { id: 'purchase-requisitions', label: 'Purchase Requisitions', path: '/procurement/purchase-requisitions', icon: FiClipboard, color: 'text-orange-600' },
         { id: 'local-purchase-orders', label: 'Local Purchase Orders', path: '/procurement/local-purchase-orders', icon: FiFileText, color: 'text-indigo-600' },
         { id: 'goods-received-notes', label: 'Goods Received Notes', path: '/procurement/goods-received-notes', icon: FiInbox, color: 'text-green-600' },
@@ -158,10 +161,20 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
         { id: 'store-issues', label: 'Store Issues', path: '/procurement/store-issues', icon: FiSend, color: 'text-blue-600' },
         { id: 'stock-adjustments', label: 'Stock Adjustments', path: '/procurement/stock-adjustments', icon: FiSliders, color: 'text-rose-600' },
         { id: 'stock-count-sessions', label: 'Stock Count Sessions', path: '/procurement/stock-count-sessions', icon: FiClipboard, color: 'text-teal-600' },
+      ]
+    },
+    {
+      id: 'kitchen-bar',
+      label: 'Kitchen & Bar',
+      icon: FiCoffee,
+      color: 'text-primary-600',
+      bgColor: 'bg-amber-50',
+      pinned: true,
+      children: [
         { id: 'menus', label: 'Menus', path: '/procurement/menus', icon: FiCoffee, color: 'text-orange-600' },
         { id: 'menu-recipes', label: 'Menu Recipes', path: '/procurement/menu-recipes', icon: FiList, color: 'text-emerald-600' },
         { id: 'consumptions', label: 'Consumption Posting', path: '/procurement/consumptions', icon: FiMinusCircle, color: 'text-red-600' },
-        { id: 'bar-transactions', label: 'Bar Transactions', path: '/procurement/bar-transactions', icon: FiDroplet, color: 'text-cyan-600' }
+        { id: 'bar-transactions', label: 'Bar Transactions', path: '/procurement/bar-transactions', icon: FiDroplet, color: 'text-cyan-600' },
       ]
     },
     {
@@ -213,18 +226,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
       color: 'text-primary-600',
       bgColor: 'bg-green-50',
       pinned: true,
-      children: [
-        { id: 'modules', label: 'Modules', path: '/setup/modules', icon: FiGrid, color: 'text-blue-600' },
-        { id: 'statuses', label: 'Statuses', path: '/setup/statuses', icon: FiTag, color: 'text-rose-600' },
-        { id: 'status-groups', label: 'Status Categories', path: '/setup/status-groups', icon: FiLayers, color: 'text-violet-600' },
-        { id: 'status-mapping', label: 'Status Mapping', path: '/setup/status-mapping', icon: FiSliders, color: 'text-cyan-600' },
-        { id: 'item-category', label: 'Item Categories', path: '/setup/item-category', icon: FiArchive, color: 'text-emerald-600' },
-        { id: 'item', label: 'Items', path: '/setup/item', icon: FiBox, color: 'text-amber-600' },
-        { id: 'unit', label: 'Units', path: '/setup/unit', icon: FiPackage, color: 'text-cyan-600' },
-        { id: 'locales', label: 'Locales', path: '/setup/locales', icon: FiGlobe, color: 'text-indigo-600' },
-        { id: 'supplier', label: 'Suppliers', path: '/setup/supplier', icon: FiTruck, color: 'text-blue-600' },
-        { id: 'store', label: 'Stores', path: '/setup/store', icon: FiHome, color: 'text-violet-600' }
-      ]
+      children: setupMenuChildren,
     }
   ];
 
@@ -354,7 +356,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
   return (
     <>
       <aside
-        className={`fixed left-0 top-0 z-30 h-screen border-r transition-all duration-300
+        className={`fixed left-0 top-0 z-50 h-screen border-r transition-all duration-300 lg:z-30
           ${darkMode
             ? 'border-stone-800 bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 shadow-xl shadow-black/30'
             : 'border-stone-200 bg-gradient-to-b from-white via-stone-50 to-emerald-50/30 shadow-lg shadow-stone-200/50'

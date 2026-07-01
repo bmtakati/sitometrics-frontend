@@ -72,7 +72,7 @@ const Layout = () => {
       {/* Mobile Overlay */}
       {sidebarOpen && window.innerWidth < 1024 && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}

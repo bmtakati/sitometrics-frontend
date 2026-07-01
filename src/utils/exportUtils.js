@@ -1,6 +1,18 @@
 // Export utilities for PDF and Excel generation
 // Install these packages: npm install jspdf jspdf-autotable exceljs
 
+const loadPdfLibs = async () => {
+  const [jspdfMod, autotableMod] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
+  const jsPDF = jspdfMod.jsPDF || jspdfMod.default;
+  const { autoTable } = autotableMod;
+
+  if (typeof jsPDF !== 'function' || typeof autoTable !== 'function') {
+    throw new Error('PDF libraries failed to load');
+  }
+
+  return { jsPDF, autoTable };
+};
+
 /**
  * Export data to PDF
  * @param {string} reportName - Name of the report
@@ -9,9 +21,7 @@
  */
 export const exportToPDF = async (reportName, data, headers) => {
   try {
-    // Dynamic import to reduce bundle size
-    const { default: jsPDF } = await import('jspdf');
-    await import('jspdf-autotable');
+    const { jsPDF, autoTable } = await loadPdfLibs();
 
     const doc = new jsPDF();
     
@@ -29,7 +39,7 @@ export const exportToPDF = async (reportName, data, headers) => {
     );
     
     // Generate table
-    doc.autoTable({
+    autoTable(doc, {
       head: [headers.map(h => h.replace(/([A-Z])/g, ' $1').trim())],
       body: tableData,
       startY: 35,

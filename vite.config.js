@@ -26,6 +26,14 @@ export default defineConfig(({ mode }) => {
           target: apiTarget,
           changeOrigin: true,
         },
+        '/assets': {
+          target: apiTarget,
+          changeOrigin: true,
+        },
+        '/images': {
+          target: apiTarget,
+          changeOrigin: true,
+        },
       },
     },
     build: {

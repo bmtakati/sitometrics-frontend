@@ -11,6 +11,7 @@ import {
   FiEye,
 } from 'react-icons/fi';
 import ActionMenu from './ActionMenu/ActionMenu';
+import { formatDate, formatDateTime } from '../utils/formatDate';
 
 /**
  * Reusable DataTable Component
@@ -132,6 +133,22 @@ const DataTable = ({
         <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
           {value}
         </span>
+      );
+    }
+
+    if (column.type === 'date') {
+      return (
+        <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          {formatDate(value)}
+        </div>
+      );
+    }
+
+    if (column.type === 'datetime') {
+      return (
+        <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          {formatDateTime(value)}
+        </div>
       );
     }
 

@@ -5,6 +5,7 @@ import NavIconDropdown, {
   THEME_OPTIONS_WITH_ICONS,
   FONT_SIZE_OPTIONS_WITH_ICONS,
 } from '../NavIconDropdown';
+import LanguageSwitcher from '../LanguageSwitcher';
 import HeaderAccentBar from '../HeaderAccentBar';
 import { useThemePreference } from '../../hooks/useThemePreference';
 import { useFontSizePreference } from '../../hooks/useFontSizePreference';
@@ -18,7 +19,6 @@ import {
   FiSettings,
   FiLogOut,
   FiBookmark,
-  FiX
 } from 'react-icons/fi';
 
 const SHOW_LOGOUT_MODAL = import.meta.env.VITE_SHOW_LOGOUT_MODAL === 'true';
@@ -34,7 +34,7 @@ const Header = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const { themePreference, setThemePreference, darkMode } = useThemePreference();
   const { fontSizePreference, setFontSizePreference } = useFontSizePreference();
-  const { language, setLanguage, languageOptions } = useLanguagePreference();
+  const { language, setLanguage, languageOptions, languageLoading } = useLanguagePreference();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -119,94 +119,85 @@ const Header = ({ onMenuClick }) => {
 
   const scopeLabel = user?.scope ?? 'HQ';
 
+  const iconButtonClass = darkMode
+    ? 'p-2 rounded-md text-gray-300 hover:bg-gray-800/80 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-offset-2 focus:ring-offset-gray-900'
+    : 'p-2 rounded-md text-gray-600 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:ring-offset-white';
+
   return (
     <>
     <header className={`sticky top-0 z-30 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-slate-50 border-slate-200'} border-b shadow-sm transition-colors duration-200`}>
-      <div className="flex items-center justify-between h-16 px-4 sm:px-6 gap-2">
-        {/* Left Section: mobile menu + title */}
-        <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
+      <div className="w-full px-4 sm:px-5 lg:px-6">
+        <div className="flex items-center h-16 min-w-0 gap-2">
           {onMenuClick && (
             <button
               type="button"
               onClick={onMenuClick}
-              className={`lg:hidden flex-shrink-0 p-2.5 -ml-1 rounded-lg ${
-                darkMode ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
+              className={`lg:hidden flex-shrink-0 p-2 -ml-1 rounded-md ${
+                darkMode ? 'hover:bg-gray-800/80 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
               } transition-colors`}
               aria-label="Open navigation menu"
             >
               <FiMenu className="w-6 h-6" />
             </button>
           )}
-          <div className="flex flex-col min-w-0">
-            <h2 className={`text-base sm:text-xl font-semibold truncate ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-              {import.meta.env.VITE_APP_NAME || 'SITOMETRICS'}
-            </h2>
-            <p className={`text-xs sm:text-sm truncate ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              {scopeLabel} | {primaryRole}
-            </p>
-          </div>
-        </div>
 
-        {/* Right Section */}
-        <div className="nav-preferences flex items-center gap-1 sm:gap-2">
-          <NavIconDropdown
-            id="header-theme"
-            value={themePreference}
-            onChange={setThemePreference}
-            options={THEME_OPTIONS_WITH_ICONS}
-            darkMode={darkMode}
-            ariaLabel="Theme"
-            className="theme-selector"
-          />
-          <NavIconDropdown
-            id="header-font-size"
-            value={fontSizePreference}
-            onChange={setFontSizePreference}
-            options={FONT_SIZE_OPTIONS_WITH_ICONS}
-            darkMode={darkMode}
-            ariaLabel="Text size"
-            className="font-size-selector"
-          />
-          <NavIconDropdown
-            id="header-language"
-            value={language}
-            onChange={setLanguage}
-            options={languageOptions}
-            darkMode={darkMode}
-            ariaLabel="Language"
-            showCodeInTrigger
-            className="language-selector"
-          />
+          <div className="nav-preferences flex items-center gap-0.5 sm:gap-1 shrink-0 ml-auto">
+            <NavIconDropdown
+              id="header-theme"
+              value={themePreference}
+              onChange={setThemePreference}
+              options={THEME_OPTIONS_WITH_ICONS}
+              darkMode={darkMode}
+              ariaLabel="Theme"
+              triggerVariant="ghost"
+              className="theme-selector"
+            />
+            <NavIconDropdown
+              id="header-font-size"
+              value={fontSizePreference}
+              onChange={setFontSizePreference}
+              options={FONT_SIZE_OPTIONS_WITH_ICONS}
+              darkMode={darkMode}
+              ariaLabel="Text size"
+              triggerVariant="ghost"
+              className="font-size-selector"
+            />
+            <LanguageSwitcher
+              id="header-language"
+              value={language}
+              onChange={setLanguage}
+              options={languageOptions}
+              darkMode={darkMode}
+              disabled={languageLoading}
+              triggerVariant="ghost"
+            />
 
-          {/* Fullscreen */}
-          <button
-            onClick={toggleFullScreen}
-            className={`p-2 mx-1 rounded-lg ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} transition-colors hidden lg:block`}
-            aria-label="Toggle fullscreen"
-          >
-            <FiMaximize className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-          </button>
-
-          {/* Bookmarks */}
-          <button className={`p-2 mx-1 rounded-lg ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} transition-colors hidden lg:block`}>
-            <FiBookmark className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-          </button>
-
-          {/* Notifications */}
-          <div className="relative">
             <button
-              onClick={() => {
-                setShowNotifications(!showNotifications);
-                setShowProfile(false);
-              }}
-              className={`p-2 mx-1 rounded-lg ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} transition-colors relative`}
-              aria-label="Notifications"
+              onClick={toggleFullScreen}
+              className={`${iconButtonClass} hidden lg:block`}
+              aria-label="Toggle fullscreen"
             >
-              <FiBell className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-500 text-white text-xs flex items-center justify-center rounded-full">
-                {notifications.length}
-              </span>
+              <FiMaximize className="w-5 h-5" />
             </button>
+
+            <button className={`${iconButtonClass} hidden lg:block`} aria-label="Bookmarks">
+              <FiBookmark className="w-5 h-5" />
+            </button>
+
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowNotifications(!showNotifications);
+                  setShowProfile(false);
+                }}
+                className={`${iconButtonClass} relative`}
+                aria-label="Notifications"
+              >
+                <FiBell className="w-5 h-5" />
+                <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-primary-500 text-white text-[10px] flex items-center justify-center rounded-full">
+                  {notifications.length}
+                </span>
+              </button>
 
             {showNotifications && (
               <div className={`absolute right-0 mt-2 w-80 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-300'} rounded-xl shadow-dropdown border py-2 fade-in`}>
@@ -241,19 +232,15 @@ const Header = ({ onMenuClick }) => {
             )}
           </div>
 
-          {/* Profile */}
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => {
                 setShowProfile(!showProfile);
                 setShowNotifications(false);
               }}
-              className={`flex items-center gap-2 p-1 pl-3 mx-1 rounded-lg ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} transition-colors`}
+              className={`flex items-center p-1 rounded-md ${darkMode ? 'hover:bg-gray-800/80' : 'hover:bg-gray-100'} transition-colors`}
+              aria-label="Open profile menu"
             >
-              <div className="text-right hidden lg:block">
-                <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{fullName}</p>
-                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{primaryRole} &ndash; {scopeLabel}</p>
-              </div>
               <div className={`w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-semibold ring-2 ${darkMode ? 'ring-gray-700' : 'ring-gray-200'}`}>
                 {fullName.charAt(0).toUpperCase()}
               </div>
@@ -296,8 +283,8 @@ const Header = ({ onMenuClick }) => {
               </div>
             )}
           </div>
+          </div>
         </div>
-        
       </div>
       <HeaderAccentBar />
     </header>

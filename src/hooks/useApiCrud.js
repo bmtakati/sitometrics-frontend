@@ -130,7 +130,21 @@ const useApiCrud = (endpoint, options = {}) => {
   // Create item
   const createItem = async (itemData) => {
     const transformed = transformFormData(itemData);
-    const hasFile = Object.values(transformed).some((v) => v instanceof File);
+    const hasFile = [itemData, transformed].some(
+      (source) => source && Object.values(source).some((v) => v instanceof File)
+    );
+
+    const appendFormValue = (form, key, value) => {
+      if (value instanceof File) {
+        form.append(key, value, value.name || 'upload');
+        return;
+      }
+      if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
+        form.append(key, JSON.stringify(value));
+        return;
+      }
+      form.append(key, String(value));
+    };
 
     const fetchOptions = hasFile
       ? {
@@ -140,11 +154,7 @@ const useApiCrud = (endpoint, options = {}) => {
             const form = new FormData();
             Object.entries(transformed).forEach(([key, value]) => {
               if (value === undefined || value === null) return;
-              if (value instanceof File) {
-                form.append(key, value, value.name || 'upload');
-                return;
-              }
-              form.append(key, String(value));
+              appendFormValue(form, key, value);
             });
             return form;
           })(),
@@ -175,7 +185,21 @@ const useApiCrud = (endpoint, options = {}) => {
   // Update item
   const updateItem = async (id, itemData) => {
     const transformed = transformFormData(itemData);
-    const hasFile = Object.values(transformed).some((v) => v instanceof File);
+    const hasFile = [itemData, transformed].some(
+      (source) => source && Object.values(source).some((v) => v instanceof File)
+    );
+
+    const appendFormValue = (form, key, value) => {
+      if (value instanceof File) {
+        form.append(key, value, value.name || 'upload');
+        return;
+      }
+      if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
+        form.append(key, JSON.stringify(value));
+        return;
+      }
+      form.append(key, String(value));
+    };
 
     // Multipart file updates: use real POST to /{id} (see api routes) so PHP parses files; apiFetch omits JSON Content-Type for FormData.
     const fetchOptions = hasFile
@@ -186,11 +210,7 @@ const useApiCrud = (endpoint, options = {}) => {
             const form = new FormData();
             Object.entries(transformed).forEach(([key, value]) => {
               if (value === undefined || value === null) return;
-              if (value instanceof File) {
-                form.append(key, value, value.name || 'upload');
-                return;
-              }
-              form.append(key, String(value));
+              appendFormValue(form, key, value);
             });
             return form;
           })(),
@@ -372,8 +392,13 @@ const useApiCrud = (endpoint, options = {}) => {
 
     } catch (err) {
       if (err.fieldErrors) {
-        // Spread backend field-level errors into the form (values may be arrays)
-        setErrors(err.fieldErrors);
+        const normalized = Object.fromEntries(
+          Object.entries(err.fieldErrors).map(([key, value]) => [
+            key,
+            Array.isArray(value) ? value[0] : value,
+          ])
+        );
+        setErrors(normalized);
       } else {
         setErrors({ submit: err.message });
         showErrorDialog(err.message);

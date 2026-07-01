@@ -160,6 +160,10 @@ const FormModal = ({
   const loadingLabel     = isEditing ? 'Saving...' : 'Creating...';
 
   const renderField = (field) => {
+    if (typeof field.visible === 'function' && !field.visible(formData)) {
+      return null;
+    }
+
     const {
       name,
       label,
@@ -212,6 +216,7 @@ const FormModal = ({
             <input
               type="file"
               name={name}
+              accept={field.accept}
               onChange={onInputChange}
               // Tailwind `file:*` styles keep the "Choose File" button consistent with other inputs.
               className={`${singleLineClasses}
@@ -228,6 +233,12 @@ const FormModal = ({
               <p className={`mt-2 text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                 Selected: <span className="font-medium">{fileName}</span>
               </p>
+            ) : null}
+            {field.helpText ? (
+              <p className={`mt-1 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>{field.helpText}</p>
+            ) : null}
+            {errors[name] ? (
+              <p className="mt-1 text-sm text-red-600">{errors[name]}</p>
             ) : null}
           </div>
         );
@@ -416,13 +427,14 @@ const FormModal = ({
   };
 
   const renderFields = (fieldsToRender) => {
+    const visibleFields = fieldsToRender.filter((field) => !field.visible || field.visible(formData));
     if (fieldsLayout === 'three-col') {
-      return <ThreeColumnFieldsGrid fields={fieldsToRender} renderField={renderField} />;
+      return <ThreeColumnFieldsGrid fields={visibleFields} renderField={renderField} />;
     }
     if (fieldsLayout === 'two-col') {
-      return <TwoColumnFieldsGrid fields={fieldsToRender} renderField={renderField} />;
+      return <TwoColumnFieldsGrid fields={visibleFields} renderField={renderField} />;
     }
-    return fieldsToRender.map(renderField);
+    return visibleFields.map(renderField);
   };
 
   if (!isOpen) return null;

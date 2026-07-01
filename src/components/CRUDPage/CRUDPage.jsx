@@ -231,7 +231,7 @@ const CRUDPage = ({
         onClose={handleCloseViewModal}
         item={viewingItem}
         title={`View ${modalTitle}`}
-        fields={formFields.map(field => ({
+        fields={(formFields || []).map(field => ({
           label: field.label,
           accessor: field.name,
           type: field.type,

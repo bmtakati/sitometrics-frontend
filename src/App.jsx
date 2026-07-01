@@ -48,10 +48,17 @@ const FaqUserGuidesAdmin = lazy(() => import('./pages/setup/FaqUserGuidesAdmin')
 const FaqTroubleshootingAdmin = lazy(() => import('./pages/setup/FaqTroubleshootingAdmin'));
 import FaqContactSupportAdmin from './pages/setup/FaqContactSupportAdmin';
 import ItemCategory from './pages/setup/ItemCategory';
+import FoodCategory from './pages/setup/FoodCategory';
+import BeverageCategory from './pages/setup/BeverageCategory';
 import Item from './pages/setup/Item';
 import Unit from './pages/setup/Unit';
+import Currency from './pages/setup/Currency';
+import ExchangeRate from './pages/setup/ExchangeRate';
 import Locale from './pages/setup/Locale';
-import Supplier from './pages/setup/Supplier';
+import SlideshowSlides from './pages/setup/SlideshowSlides';
+import Hotel from './pages/setup/Hotel';
+import Outlet from './pages/setup/Outlet';
+import Supplier from './pages/procurement/Supplier';
 import Store from './pages/setup/Store';
 import PurchaseRequisition from './pages/procurement/PurchaseRequisition';
 import LocalPurchaseOrder from './pages/procurement/LocalPurchaseOrder';
@@ -164,10 +171,17 @@ function AppRoutes() {
         <Route path="setup/faq-troubleshooting" element={<FaqTroubleshootingAdmin />} />
         <Route path="setup/faq-contact" element={<FaqContactSupportAdmin />} />
         <Route path="setup/item-category" element={<ItemCategory />} />
+        <Route path="setup/food-categories" element={<FoodCategory />} />
+        <Route path="setup/beverage-categories" element={<BeverageCategory />} />
         <Route path="setup/item" element={<Item />} />
         <Route path="setup/unit" element={<Unit />} />
+        <Route path="setup/currencies" element={<Currency />} />
+        <Route path="setup/exchange-rates" element={<ExchangeRate />} />
         <Route path="setup/locales" element={<Locale />} />
-        <Route path="setup/supplier" element={<Supplier />} />
+        <Route path="setup/slideshow-slides" element={<SlideshowSlides />} />
+        <Route path="setup/hotels" element={<Hotel />} />
+        <Route path="setup/outlets" element={<Outlet />} />
+        <Route path="procurement/suppliers" element={<Supplier />} />
         <Route path="setup/store" element={<Store />} />
         <Route path="procurement/purchase-requisitions" element={<PurchaseRequisition />} />
         <Route path="procurement/local-purchase-orders" element={<LocalPurchaseOrder />} />

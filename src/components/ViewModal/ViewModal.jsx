@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiCalendar, FiClock } from 'react-icons/fi';
 import SearchableSelect from '../SearchableSelect';
+import { formatDate, formatDateTime, formatTimestamp } from '../../utils/formatDate';
 
 /**
  * Reusable View Modal Component
@@ -91,13 +92,13 @@ const ViewModal = ({
     }
 
     // Handle dates
-    if (field.type === 'date' || field.accessor.includes('date')) {
-      return new Date(value).toLocaleDateString();
+    if (field.type === 'date' || (field.accessor && String(field.accessor).includes('date'))) {
+      return formatDate(value);
     }
 
     // Handle datetime
-    if (field.type === 'datetime' || field.accessor.includes('_at')) {
-      return new Date(value).toLocaleString();
+    if (field.type === 'datetime' || (field.accessor && String(field.accessor).endsWith('_at'))) {
+      return formatDateTime(value);
     }
 
     // Handle custom render
@@ -108,18 +109,7 @@ const ViewModal = ({
     return String(value);
   };
 
-  const formatTimestamp = (timestamp) => {
-    if (!timestamp) return '—';
-    const date = new Date(timestamp);
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  };
+  const renderTimestamp = (timestamp) => formatTimestamp(timestamp);
 
   const renderReadonlyField = (field, value, displayValue) => {
     if (field.type === 'custom') return displayValue;
@@ -332,7 +322,7 @@ const ViewModal = ({
                       <p className={`text-sm ${
                         darkMode ? 'text-white' : 'text-gray-900'
                       }`}>
-                        {formatTimestamp(item.created_at)}
+                        {renderTimestamp(item.created_at)}
                       </p>
                     </div>
                   )}
@@ -353,7 +343,7 @@ const ViewModal = ({
                       <p className={`text-sm ${
                         darkMode ? 'text-white' : 'text-gray-900'
                       }`}>
-                        {formatTimestamp(item.updated_at)}
+                        {renderTimestamp(item.updated_at)}
                       </p>
                     </div>
                   )}

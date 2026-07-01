@@ -43,10 +43,13 @@ import NavIconDropdown, {
   THEME_OPTIONS_WITH_ICONS,
   FONT_SIZE_OPTIONS_WITH_ICONS,
 } from '../components/NavIconDropdown';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import HeaderAccentBar from '../components/HeaderAccentBar';
 import { useThemePreference } from '../hooks/useThemePreference';
 import { useFontSizePreference } from '../hooks/useFontSizePreference';
 import { useLanguagePreference } from '../hooks/useLanguagePreference';
+import { LANDING_SLIDES, mapApiSlideToHeroSlide } from '../data/landingSlides';
+import { resolveSlideshowImageUrl } from '../utils/resolveApiAssetUrl';
 
 const BrandMark = ({ className = 'w-20 h-20', darkMode = false }) => (
   <div
@@ -66,11 +69,12 @@ const LandingPage = () => {
   
   const { themePreference, setThemePreference, darkMode } = useThemePreference();
   const { fontSizePreference, setFontSizePreference } = useFontSizePreference();
-  const { language, setLanguage, languageOptions } = useLanguagePreference();
+  const { language, setLanguage, languageOptions, languageLoading } = useLanguagePreference();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showContactSupportModal, setShowContactSupportModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [slides, setSlides] = useState(LANDING_SLIDES);
   const [isSliderPaused, setIsSliderPaused] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -113,6 +117,38 @@ const LandingPage = () => {
   useEffect(() => {
     setAccordionShowAllFaqs(false);
   }, [activeFaqCategory]);
+
+  // Hero slideshow from API (fallback to static slides).
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadSlides = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/slideshow-slides/active`, {
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (res.ok && Array.isArray(payload?.data) && payload.data.length > 0) {
+          setSlides(
+            payload.data.map((row) => ({
+              ...mapApiSlideToHeroSlide(row),
+              image: resolveSlideshowImageUrl(row),
+            }))
+          );
+          setCurrentSlide(0);
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setSlides(LANDING_SLIDES);
+        }
+      }
+    };
+
+    loadSlides();
+
+    return () => controller.abort();
+  }, [API_URL]);
 
   // Load contact info for footer (admin-configured).
   useEffect(() => {
@@ -536,29 +572,7 @@ const LandingPage = () => {
     }
   }, [activeFaqCategory, faqSidebarCategoryList]);
 
-  const slides = [
-    {
-      id: 1,
-      image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1920&h=600&fit=crop',
-      title: 'Inventory & Procurement, Unified',
-      description: 'Manage purchase requisitions, LPOs, and goods receipt from one modern ERP platform',
-      gradient: 'from-stone-950/70 via-stone-900/55 to-stone-800/35',
-    },
-    {
-      id: 2,
-      image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1920&h=600&fit=crop',
-      title: 'Food & Beverage Operations',
-      description: 'Track kitchen recipes, bar sales, store issues, and consumption with full traceability',
-      gradient: 'from-stone-950/70 via-stone-900/55 to-stone-800/35',
-    },
-    {
-      id: 3,
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1920&h=600&fit=crop',
-      title: 'Real-Time Stock Intelligence',
-      description: 'Stock counts, adjustments, FIFO costing, and dashboards that keep teams aligned',
-      gradient: 'from-stone-950/70 via-stone-900/55 to-stone-800/35',
-    },
-  ];
+  const slidesList = slides.length ? slides : LANDING_SLIDES;
 
   const stats = [
     { id: 1, value: '6+', label: 'Core ERP Modules', icon: FiPackage, color: 'blue' },
@@ -669,11 +683,11 @@ const LandingPage = () => {
   useEffect(() => {
     if (!isSliderPaused) {
       const timer = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % slides.length);
+        setCurrentSlide((prev) => (prev + 1) % slidesList.length);
       }, 5000);
       return () => clearInterval(timer);
     }
-  }, [slides.length, isSliderPaused]);
+  }, [slidesList.length, isSliderPaused]);
 
   // Keyboard navigation for slider
   useEffect(() => {
@@ -706,11 +720,11 @@ const LandingPage = () => {
   };
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
+    setCurrentSlide((prev) => (prev + 1) % slidesList.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    setCurrentSlide((prev) => (prev - 1 + slidesList.length) % slidesList.length);
   };
 
   const scrollToTop = () => {
@@ -966,23 +980,23 @@ const LandingPage = () => {
       <nav className={`fixed top-0 w-full z-50 transition-colors duration-300 ${
         darkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-gray-200'
       } backdrop-blur-sm border-b shadow-sm`}>
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between h-20">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <FiBarChart2 className={`w-10 h-10 ${darkMode ? 'text-green-500' : 'text-green-600'}`} strokeWidth={2.5} />
-              <div>
-                <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        <div className="w-full px-4 sm:px-5 lg:px-6">
+          <div className="flex items-center gap-3 lg:gap-5 h-16 min-w-0">
+            {/* Brand */}
+            <a href="#home" className="flex items-center gap-2 shrink-0 min-w-0">
+              <FiBarChart2 className={`w-8 h-8 shrink-0 ${darkMode ? 'text-green-500' : 'text-green-600'}`} strokeWidth={2.5} />
+              <div className="min-w-0">
+                <h1 className={`text-base lg:text-lg font-bold leading-tight truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   SITOMETRICS
                 </h1>
-                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-[10px] sm:text-xs leading-tight truncate ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   F&B Inventory & Procurement ERP
                 </p>
               </div>
-            </div>
+            </a>
 
             {/* Navigation Links */}
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden lg:flex flex-1 items-center justify-center gap-x-4 xl:gap-x-5 text-sm whitespace-nowrap min-w-0">
               <a href="#home" className={`relative font-medium transition-all group ${
                 darkMode ? 'text-gray-300 hover:text-primary-400' : 'text-gray-600 hover:text-primary-600'
               }`}>
@@ -1031,8 +1045,8 @@ const LandingPage = () => {
               </button>
             </div>
 
-            {/* Right Actions */}
-            <div className="nav-preferences flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+            {/* Header utilities */}
+            <div className="nav-preferences flex items-center gap-0.5 sm:gap-1 shrink-0 ml-auto lg:ml-0">
               <NavIconDropdown
                 id="landing-theme"
                 value={themePreference}
@@ -1040,6 +1054,7 @@ const LandingPage = () => {
                 options={THEME_OPTIONS_WITH_ICONS}
                 darkMode={darkMode}
                 ariaLabel="Theme"
+                triggerVariant="ghost"
                 className="theme-selector"
               />
               <NavIconDropdown
@@ -1049,24 +1064,25 @@ const LandingPage = () => {
                 options={FONT_SIZE_OPTIONS_WITH_ICONS}
                 darkMode={darkMode}
                 ariaLabel="Text size"
+                triggerVariant="ghost"
                 className="font-size-selector"
               />
-              <NavIconDropdown
+              <LanguageSwitcher
                 id="landing-language"
                 value={language}
                 onChange={setLanguage}
                 options={languageOptions}
                 darkMode={darkMode}
-                ariaLabel="Language"
-                showCodeInTrigger
-                className="language-selector"
+                disabled={languageLoading}
+                triggerVariant="ghost"
               />
 
-              {/* Fullscreen Toggle */}
               <button
                 onClick={toggleFullScreen}
-                className={`p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                  darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 focus:ring-gray-600 focus:ring-offset-gray-900' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 focus:ring-gray-400 focus:ring-offset-white'
+                className={`p-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  darkMode
+                    ? 'text-gray-300 hover:bg-gray-800/80 focus:ring-gray-600 focus:ring-offset-gray-900'
+                    : 'text-gray-600 hover:bg-gray-100 focus:ring-gray-400 focus:ring-offset-white'
                 }`}
                 aria-label="Toggle fullscreen"
               >
@@ -1079,17 +1095,17 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section with Slider and Info Panel */}
-      <section id="home" className="relative h-screen overflow-hidden pt-20 bg-white">
-        <div className={`flex flex-col lg:flex-row h-full ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+      <section id="home" className="relative min-h-screen lg:h-screen overflow-hidden pt-16 bg-white">
+        <div className={`flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] lg:h-full ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
           {/* Left Side - Image Slider (70%) */}
           <div 
-            className={`slider-area relative w-full lg:w-[70%] flex-1 lg:flex-none lg:h-[calc(100%-2.5rem)] shadow-xl lg:order-1 mt-5 ml-5 mb-5 rounded-3xl overflow-hidden ${darkMode ? 'bg-gray-900' : 'bg-white'}`}
+            className={`slider-area relative w-full lg:w-[70%] h-[58vh] min-h-[320px] sm:h-[62vh] sm:min-h-[380px] lg:flex-none lg:h-[calc(100%-2.5rem)] lg:min-h-0 shadow-xl lg:order-1 m-0 lg:mt-5 lg:ml-5 lg:mb-5 rounded-none lg:rounded-3xl overflow-hidden shrink-0 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}
             onMouseEnter={() => setIsSliderPaused(true)}
             onMouseLeave={() => setIsSliderPaused(false)}
             role="region"
             aria-label="Image carousel"
           >
-            {slides.map((slide, index) => (
+            {slidesList.map((slide, index) => (
               <div
                 key={slide.id}
                 className={`absolute inset-0 transition-opacity duration-1000 ${
@@ -1105,7 +1121,8 @@ const LandingPage = () => {
                 <img
                   src={slide.image}
                   alt={slide.title}
-                  loading="lazy"
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  fetchpriority={index === 0 ? 'high' : 'auto'}
                   onLoad={() => handleImageLoad(slide.id)}
                   className={`absolute inset-0 w-full h-full object-cover transform transition-all duration-1000 hover:scale-105 ${
                     loadedImages[slide.id] ? 'opacity-100' : 'opacity-0'
@@ -1175,7 +1192,7 @@ const LandingPage = () => {
 
             {/* Slider Indicators */}
             <div className="absolute bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-10">
-              {slides.map((slide, index) => (
+              {slidesList.map((slide, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentSlide(index)}
@@ -1192,7 +1209,7 @@ const LandingPage = () => {
           </div>
 
           {/* Right Side - System Info Panel (30%) */}
-          <div className={`info-panel relative lg:w-[30%] min-h-[500px] lg:min-h-0 lg:h-full flex flex-col items-center justify-center px-6 py-8 lg:px-8 lg:py-0 overflow-hidden lg:order-2 shadow-2xl ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+          <div className={`info-panel relative lg:w-[30%] flex-1 min-h-0 lg:min-h-0 lg:h-full flex flex-col items-center justify-center px-6 py-8 lg:px-8 lg:py-0 overflow-hidden lg:order-2 shadow-2xl ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
             {/* Vertical Flag Divider */}
             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-64 flex flex-col rounded-l-lg overflow-hidden shadow-lg">
               <div className={`flex-1 ${darkMode ? 'bg-gray-700' : 'bg-gray-900'}`}></div>

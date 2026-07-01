@@ -5,16 +5,25 @@ import {
   FiMoon,
   FiMonitor,
   FiGlobe,
-  FiMessageCircle,
   FiType,
   FiZoomOut,
   FiZoomIn,
   FiMaximize2,
 } from 'react-icons/fi';
+import { resolveApiAssetUrl } from '../utils/resolveApiAssetUrl';
+import { LOCALE_FLAG_ASSETS } from '../utils/localeFlags';
 
 export const LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'English', Icon: FiGlobe },
-  { value: 'sw', label: 'Kiswahili', Icon: FiMessageCircle },
+  {
+    value: 'en',
+    label: 'English',
+    flagUrl: resolveApiAssetUrl(LOCALE_FLAG_ASSETS.en),
+  },
+  {
+    value: 'sw',
+    label: 'Kiswahili',
+    flagUrl: resolveApiAssetUrl(LOCALE_FLAG_ASSETS.sw),
+  },
 ];
 
 export const THEME_OPTIONS_WITH_ICONS = [
@@ -30,12 +39,24 @@ export const FONT_SIZE_OPTIONS_WITH_ICONS = [
   { value: 'xl', label: 'Extra large', Icon: FiMaximize2 },
 ];
 
-const navDropdownTriggerClass = (isDark) =>
-  `flex h-10 items-center gap-1 rounded-lg border px-2.5 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+const navDropdownTriggerClass = (isDark, triggerVariant = 'default') => {
+  const base =
+    'flex h-9 items-center gap-1 rounded-md px-2 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
+
+  if (triggerVariant === 'ghost') {
+    return `${base} ${
+      isDark
+        ? 'text-gray-300 hover:bg-gray-800/80 focus:ring-gray-600 focus:ring-offset-gray-900'
+        : 'text-gray-600 hover:bg-gray-100 focus:ring-gray-400 focus:ring-offset-white'
+    }`;
+  }
+
+  return `${base} h-10 px-2.5 rounded-lg border ${
     isDark
       ? 'border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 focus:ring-gray-500 focus:ring-offset-gray-900'
       : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-primary-400 focus:ring-offset-white'
   }`;
+};
 
 const navDropdownPanelClass = (isDark) =>
   `absolute right-0 z-50 mt-1 min-w-[10.5rem] overflow-hidden rounded-lg border py-1 shadow-lg ${
@@ -53,17 +74,25 @@ const navDropdownItemClass = (isDark, selected) =>
         : 'text-gray-800 hover:bg-gray-50'
   }`;
 
-function OptionMedia({ option, className }) {
+function FlagImage({ src, className }) {
+  return (
+    <img
+      src={src}
+      alt=""
+      className={`${className} rounded-sm border border-gray-200/80 object-cover dark:border-gray-600`}
+      loading="lazy"
+      decoding="async"
+    />
+  );
+}
+
+function OptionMedia({ option, className, variant }) {
   if (option?.flagUrl) {
-    return (
-      <img
-        src={option.flagUrl}
-        alt=""
-        className={`${className} rounded-sm border border-gray-200/80 object-contain dark:border-gray-600`}
-        width={option.flagUrl.endsWith('.svg') ? undefined : 24}
-        height={option.flagUrl.endsWith('.svg') ? undefined : 16}
-      />
-    );
+    const flagClass =
+      variant === 'language'
+        ? `${className} aspect-[4/3]`
+        : `${className} aspect-[4/3]`;
+    return <FlagImage src={option.flagUrl} className={flagClass} />;
   }
   if (option?.Icon) {
     const Icon = option.Icon;
@@ -85,6 +114,10 @@ export default function NavIconDropdown({
   className = '',
   /** When true, trigger shows flag/icon plus uppercase locale code (e.g. EN). */
   showCodeInTrigger = false,
+  /** 'language' — flag-first styling for locale switcher */
+  variant = 'default',
+  triggerVariant = 'default',
+  disabled = false,
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -113,6 +146,7 @@ export default function NavIconDropdown({
       <button
         type="button"
         id={id}
+        disabled={disabled}
         aria-label={
           showCodeInTrigger && selectedCode
             ? `${ariaLabel}: ${selected.label} (${selectedCode})`
@@ -121,12 +155,21 @@ export default function NavIconDropdown({
         aria-haspopup="listbox"
         aria-expanded={open}
         title={showCodeInTrigger && selectedCode ? `${selected.label} (${selectedCode})` : selected.label}
-        onClick={() => setOpen((prev) => !prev)}
-        className={navDropdownTriggerClass(darkMode)}
+        onClick={() => !disabled && setOpen((prev) => !prev)}
+        className={`${navDropdownTriggerClass(darkMode, triggerVariant)} ${disabled ? 'pointer-events-none opacity-50' : ''} ${
+          variant === 'language' ? 'min-w-[4.5rem] gap-1.5' : ''
+        }`}
       >
         <OptionMedia
           option={selected}
-          className={showCodeInTrigger ? 'h-4 w-6 shrink-0' : 'h-5 w-5 shrink-0'}
+          variant={variant}
+          className={
+            variant === 'language'
+              ? 'h-4 w-6 shrink-0'
+              : showCodeInTrigger
+                ? 'h-4 w-6 shrink-0'
+                : 'h-5 w-5 shrink-0'
+          }
         />
         {showCodeInTrigger && selectedCode ? (
           <span
@@ -160,8 +203,8 @@ export default function NavIconDropdown({
                   }}
                   className={navDropdownItemClass(darkMode, isSelected)}
                 >
-                  <OptionMedia option={opt} className="h-4 w-6 shrink-0" />
-                  <span>{opt.label}</span>
+                  <OptionMedia option={opt} variant={variant} className="h-4 w-6 shrink-0" />
+                  <span className="truncate">{opt.label}</span>
                 </button>
               </li>
             );

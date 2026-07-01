@@ -1,19 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FiGlobe } from 'react-icons/fi';
 import { API_BASE_URL } from '../context/AuthContext';
-import { resolveLocaleFlagUrl } from '../utils/resolveApiAssetUrl';
+import { resolveApiAssetUrl, resolveLocaleFlagUrl } from '../utils/resolveApiAssetUrl';
+import { defaultFlagAssetForCode } from '../utils/localeFlags';
 import { LANGUAGE_OPTIONS } from '../components/NavIconDropdown';
 
-const mapLocaleToOption = (row) => ({
-  value: String(row.code || '').trim(),
-  label: row.name || row.code,
-  Icon: FiGlobe,
-  flagUrl: resolveLocaleFlagUrl(row) || null,
-});
+const mapLocaleToOption = (row) => {
+  const flagFromApi = resolveLocaleFlagUrl(row);
+  const fallbackAsset = defaultFlagAssetForCode(row.code);
+  const flagUrl =
+    flagFromApi ||
+    (fallbackAsset ? resolveApiAssetUrl(fallbackAsset) : null);
+
+  return {
+    value: String(row.code || '').trim(),
+    label: row.native_name || row.name || row.code,
+    flagUrl,
+  };
+};
 
 /**
  * Language preference with options loaded from GET /api/locales/active.
- * Falls back to static LANGUAGE_OPTIONS if the API is unavailable.
+ * Flags are served from backend public/assets/images/flags (via flag_url).
  */
 export function useLanguagePreference() {
   const [languageOptions, setLanguageOptions] = useState(LANGUAGE_OPTIONS);
@@ -39,7 +46,7 @@ export function useLanguagePreference() {
         });
       }
     } catch {
-      // keep fallback LANGUAGE_OPTIONS
+      // keep fallback LANGUAGE_OPTIONS with bundled asset paths
     } finally {
       setLanguageLoading(false);
     }
@@ -52,6 +59,7 @@ export function useLanguagePreference() {
   useEffect(() => {
     if (language) {
       localStorage.setItem('language', language);
+      document.documentElement.lang = language;
     }
   }, [language]);
 

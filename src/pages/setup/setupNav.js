@@ -1,0 +1,97 @@
+import {
+  FiMapPin,
+  FiHome,
+  FiCoffee,
+  FiCpu,
+  FiGrid,
+  FiTag,
+  FiLayers,
+  FiSliders,
+  FiArchive,
+  FiDroplet,
+  FiBox,
+  FiPackage,
+  FiDollarSign,
+  FiRefreshCw,
+  FiGlobe,
+  FiImage,
+  FiDatabase,
+} from 'react-icons/fi';
+
+export const setupMenuChildren = [
+  {
+    id: 'setup-property',
+    label: 'Property & Outlets',
+    icon: FiMapPin,
+    color: 'text-emerald-600',
+    children: [
+      { id: 'hotels', label: 'Hotels', path: '/setup/hotels', icon: FiHome, color: 'text-emerald-600' },
+      { id: 'outlets', label: 'Outlets', path: '/setup/outlets', icon: FiCoffee, color: 'text-orange-600' },
+    ],
+  },
+  {
+    id: 'setup-system',
+    label: 'System',
+    icon: FiCpu,
+    color: 'text-blue-600',
+    children: [
+      { id: 'modules', label: 'Modules', path: '/setup/modules', icon: FiGrid, color: 'text-blue-600' },
+      { id: 'statuses', label: 'Statuses', path: '/setup/statuses', icon: FiTag, color: 'text-rose-600' },
+      { id: 'status-groups', label: 'Status Categories', path: '/setup/status-groups', icon: FiLayers, color: 'text-violet-600' },
+      { id: 'status-mapping', label: 'Status Mapping', path: '/setup/status-mapping', icon: FiSliders, color: 'text-cyan-600' },
+    ],
+  },
+  {
+    id: 'setup-catalog',
+    label: 'Catalog',
+    icon: FiArchive,
+    color: 'text-amber-600',
+    children: [
+      { id: 'item-category', label: 'Item Categories', path: '/setup/item-category', icon: FiArchive, color: 'text-emerald-600' },
+      { id: 'food-categories', label: 'Food Categories', path: '/setup/food-categories', icon: FiCoffee, color: 'text-orange-600' },
+      { id: 'beverage-categories', label: 'Beverage Categories', path: '/setup/beverage-categories', icon: FiDroplet, color: 'text-sky-600' },
+      { id: 'item', label: 'Items', path: '/setup/item', icon: FiBox, color: 'text-amber-600' },
+      { id: 'unit', label: 'Units', path: '/setup/unit', icon: FiPackage, color: 'text-cyan-600' },
+    ],
+  },
+  {
+    id: 'setup-finance',
+    label: 'Finance & Locale',
+    icon: FiDollarSign,
+    color: 'text-green-600',
+    children: [
+      { id: 'currencies', label: 'Currency', path: '/setup/currencies', icon: FiDollarSign, color: 'text-green-600' },
+      { id: 'exchange-rates', label: 'Exchange Rates', path: '/setup/exchange-rates', icon: FiRefreshCw, color: 'text-teal-600' },
+      { id: 'locales', label: 'Locales', path: '/setup/locales', icon: FiGlobe, color: 'text-indigo-600' },
+    ],
+  },
+  {
+    id: 'setup-inventory',
+    label: 'Inventory & Content',
+    icon: FiDatabase,
+    color: 'text-violet-600',
+    children: [
+      { id: 'store', label: 'Stores', path: '/setup/store', icon: FiHome, color: 'text-violet-600' },
+      { id: 'slideshow-slides', label: 'Slideshow', path: '/setup/slideshow-slides', icon: FiImage, color: 'text-pink-600' },
+    ],
+  },
+];
+
+export const setupRoutes = [
+  { path: 'setup/hotels', component: 'Hotel' },
+  { path: 'setup/outlets', component: 'Outlet' },
+  { path: 'setup/modules', component: 'Module' },
+  { path: 'setup/statuses', component: 'Statuses' },
+  { path: 'setup/status-groups', component: 'StatusGroups' },
+  { path: 'setup/status-mapping', component: 'StatusMapping' },
+  { path: 'setup/item-category', component: 'ItemCategory' },
+  { path: 'setup/food-categories', component: 'FoodCategory' },
+  { path: 'setup/beverage-categories', component: 'BeverageCategory' },
+  { path: 'setup/item', component: 'Item' },
+  { path: 'setup/unit', component: 'Unit' },
+  { path: 'setup/currencies', component: 'Currency' },
+  { path: 'setup/exchange-rates', component: 'ExchangeRate' },
+  { path: 'setup/locales', component: 'Locale' },
+  { path: 'setup/slideshow-slides', component: 'SlideshowSlides' },
+  { path: 'setup/store', component: 'Store' },
+];
