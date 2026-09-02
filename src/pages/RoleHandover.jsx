@@ -5,7 +5,12 @@ import {
   FiRefreshCw, FiEye, FiChevronLeft, FiChevronRight,
   FiUser, FiArchive, FiSend, FiShield, FiSave,
 } from 'react-icons/fi';
-import Swal from 'sweetalert2';
+import {
+  showConfirmDialog,
+  showInfoDialog,
+  showQuickError,
+  showSuccessToast,
+} from '../utils/dialogUtils';
 import PageHeader from '../components/PageHeader';
 import useDarkMode from '../hooks/useDarkMode';
 import apiFetch from '../utils/apiFetch';
@@ -483,31 +488,28 @@ const RoleHandover = () => {
               : (fresh.role_names ?? []),
           };
           setAuthUser(enriched, token);
-          await Swal.fire({
-            icon: 'success',
-            title: 'Handover cancelled',
-            html: 'The handover has been cancelled and your roles have been <strong>restored</strong>.<br/>Your session has been updated — no re-login required.',
-            confirmButtonText: 'OK',
-            timer: 6000,
-            timerProgressBar: true,
-          });
+          showInfoDialog(
+            'Handover cancelled',
+            'The handover has been cancelled and your roles have been restored. Your session has been updated.'
+          );
           return;
         }
       } catch { /* fall through to logout */ }
 
       // Fallback: could not refresh session — log out so the user re-authenticates
       // with their restored roles.
-      await Swal.fire({
-        icon: 'info',
+      const signOut = await showConfirmDialog({
         title: 'Handover cancelled',
-        html: 'The handover has been cancelled and your original roles have been restored.<br/><br/>You will be signed out so your permissions are refreshed on next login.',
-        confirmButtonText: 'Sign out now',
-        allowOutsideClick: false,
+        message: 'Your original roles have been restored. Sign out now to refresh your permissions?',
+        confirmText: 'Sign out now',
+        confirmColor: '#2563eb',
       });
-      logout();
-      navigate('/login');
+      if (signOut.isConfirmed) {
+        logout();
+        navigate('/login');
+      }
     } catch (err) {
-      Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: err?.message ?? 'Failed to cancel.', showConfirmButton: false, timer: 4000 });
+      showQuickError('Failed to cancel', err?.message ?? 'Could not cancel handover.');
     } finally {
       setCancelling(false);
     }
@@ -576,11 +578,11 @@ const RoleHandover = () => {
         }
       } catch { /* non-critical */ }
 
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Handover created. Your roles have been updated.', showConfirmButton: false, timer: 3500, timerProgressBar: true });
+      showSuccessToast('Handover created. Your roles have been updated.');
       setActiveTab('active');
       fetchStats();
     } catch (err) {
-      Swal.fire({ icon: 'error', title: 'Error', text: err?.message ?? 'Failed to create handover.' });
+      showQuickError('Error', err?.message ?? 'Failed to create handover.');
     } finally {
       setSubmitting(false);
     }

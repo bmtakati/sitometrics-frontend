@@ -162,7 +162,6 @@ const FaqUserGuidesAdmin = () => {
 
   const formFields = [
     { name: 'title', label: 'Title', type: 'text', required: true, autoFocus: true },
-    { name: 'description', label: 'Description', type: 'textarea', rows: 4, required: true },
     {
       name: 'type',
       label: 'Guide Type',
@@ -171,14 +170,12 @@ const FaqUserGuidesAdmin = () => {
       placeholder: 'Select Guide Type',
       options: guideTypes.length ? guideTypes : [{ value: '', label: 'No active guide types' }],
     },
-    { name: 'upload', label: '', type: 'file', required: false },
     {
       name: 'status_id',
       label: 'Status',
       type: 'status_id',
       required: true
     },
-    { name: 'size', label: 'Size (auto)', type: 'text', required: false, disabled: true },
     {
       name: 'sort_order',
       label: 'List position',
@@ -186,6 +183,9 @@ const FaqUserGuidesAdmin = () => {
       required: false,
       placeholder: '1 = top of list',
     },
+    { name: 'size', label: 'Size (auto)', type: 'text', required: false, disabled: true },
+    { name: 'description', label: 'Description', type: 'textarea', rows: 4, required: true },
+    { name: 'upload', label: '', type: 'file', required: false },
   ];
 
   const filteredData = useMemo(() => {
@@ -336,7 +336,7 @@ const FaqUserGuidesAdmin = () => {
         errors={crud.errors}
         isLoading={crud.actionLoading}
         isEditing={crud.isEditing}
-        fieldsLayout="three-col"
+        fieldsLayout="two-col"
         maxWidth="max-w-4xl"
       />
 

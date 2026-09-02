@@ -25,8 +25,8 @@ const patchOutletRow = (row) => ({
     id: table.id,
     table_number: table.table_number || '',
     name: table.name || '',
-    seats: table.seats ?? 2,
     zone: table.zone || '',
+    seat_numbers: (table.table_seats || table.tableSeats || []).map((seat) => seat.seat_number).filter(Boolean),
   })),
 });
 
@@ -92,7 +92,7 @@ const Outlet = () => {
       store_id: '',
       description: '',
       status_id: '',
-      tables: [{ table_number: '', name: '', seats: 2, zone: '' }],
+      tables: [{ table_number: '', name: '', zone: '', seat_numbers: ['1', '2'] }],
     },
     validateForm: (data) => {
       const errors = {};
@@ -126,8 +126,10 @@ const Outlet = () => {
             ...(row.id ? { id: Number(row.id) } : {}),
             table_number: row.table_number.trim(),
             name: row.name?.trim() || null,
-            seats: Number(row.seats || 2),
             zone: row.zone?.trim() || null,
+            seat_numbers: (row.seat_numbers || [])
+              .map((seat) => String(seat).trim())
+              .filter(Boolean),
           }));
       }
 
@@ -137,7 +139,7 @@ const Outlet = () => {
       if (Array.isArray(data)) return data.map(patchOutletRow);
       const patched = patchOutletRow(data);
       if (!patched.tables?.length) {
-        patched.tables = [{ table_number: '', name: '', seats: 2, zone: '' }];
+        patched.tables = [{ table_number: '', name: '', zone: '', seat_numbers: ['1', '2'] }];
       }
       return patched;
     },
@@ -208,7 +210,6 @@ const Outlet = () => {
             required: true,
             options: hotelOptions,
           },
-          { name: 'name', label: 'Name', type: 'text', required: true, autoFocus: true },
           {
             name: 'type',
             label: 'Outlet Type',
@@ -216,6 +217,7 @@ const Outlet = () => {
             required: true,
             options: OUTLET_TYPES,
           },
+          { name: 'name', label: 'Name', type: 'text', required: true, autoFocus: true },
           {
             name: 'store_id',
             label: 'Linked Store',
@@ -223,8 +225,8 @@ const Outlet = () => {
             required: false,
             options: storeOptions,
           },
-          { name: 'description', label: 'Description', type: 'textarea', rows: 3, required: false },
           { name: 'status_id', label: 'Status', type: 'status_id', required: true },
+          { name: 'description', label: 'Description', type: 'textarea', rows: 3, required: false },
         ],
       },
       {
@@ -235,6 +237,7 @@ const Outlet = () => {
           {
             name: 'tables',
             type: 'custom',
+            fullWidth: true,
             render: (formData, onInputChange, errors, darkMode) => (
               <OutletTablesEditor
                 fieldName="tables"
@@ -303,7 +306,7 @@ const Outlet = () => {
                     <tr>
                       <th className="px-3 py-2">Table #</th>
                       <th className="px-3 py-2">Label</th>
-                      <th className="px-3 py-2">Seats</th>
+                      <th className="px-3 py-2">Seat numbers</th>
                       <th className="px-3 py-2">Zone</th>
                     </tr>
                   </thead>
@@ -312,7 +315,12 @@ const Outlet = () => {
                       <tr key={table.id || table.table_number} className="border-t border-gray-100 dark:border-gray-700">
                         <td className="px-3 py-2 font-medium">{table.table_number}</td>
                         <td className="px-3 py-2">{table.name || '—'}</td>
-                        <td className="px-3 py-2">{table.seats ?? '—'}</td>
+                        <td className="px-3 py-2">
+                          {(table.seat_numbers || table.table_seats || table.tableSeats || [])
+                            .map((seat) => (typeof seat === 'string' ? seat : seat.seat_number))
+                            .filter(Boolean)
+                            .join(', ') || '—'}
+                        </td>
                         <td className="px-3 py-2">{table.zone || '—'}</td>
                       </tr>
                     ))}

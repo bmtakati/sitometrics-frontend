@@ -172,6 +172,21 @@ export function resolveLocaleFlagUrl(locale) {
   return '';
 }
 
+/** Resolve hotel logo for tables and PDF previews. */
+export function resolveHotelLogoUrl(hotel) {
+  if (!hotel) return '';
+
+  const path =
+    hotel.logo_url ||
+    (hotel.logo_path
+      ? hotel.logo_path.startsWith('images/') || hotel.logo_path.startsWith('assets/')
+        ? `/${String(hotel.logo_path).replace(/^\/+/, '')}`
+        : `/storage/${String(hotel.logo_path).replace(/^\/+/, '')}`
+      : '');
+
+  return path ? resolveApiAssetUrl(path) : '';
+}
+
 /** Resolve slideshow slide image URL for landing page and admin table. */
 export function resolveSlideshowImageUrl(slide) {
   if (!slide) return '';

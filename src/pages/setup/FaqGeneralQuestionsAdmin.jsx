@@ -463,7 +463,7 @@ const FaqGeneralQuestionsAdmin = () => {
         errors={crud.errors}
         isLoading={crud.actionLoading}
         isEditing={crud.isEditing}
-        fieldsLayout="three-col"
+        fieldsLayout="two-col"
         maxWidth="max-w-5xl"
       />
     </div>

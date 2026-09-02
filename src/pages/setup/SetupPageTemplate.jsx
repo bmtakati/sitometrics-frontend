@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { FiSearch, FiEdit2, FiTrash2, FiPlus, FiChevronLeft, FiChevronRight, FiX, FiCheck, FiTrendingUp, FiSave, FiAlertCircle, FiMap } from 'react-icons/fi';
-import Swal from 'sweetalert2';
+import { showSuccessToast } from '../../utils/dialogUtils';
 import ConfirmationModal from '../../components/ConfirmationModal/ConfirmationModal';
 import useDarkMode from '../../hooks/useDarkMode';
 import PageHeader from '../../components/PageHeader';
@@ -95,15 +95,7 @@ const SetupPageTemplate = ({ title, description, icon: _icon, pageIcon, sampleDa
     setFormData(initialFormData);
     setErrors({});
     
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'success',
-      title: `${title} added successfully`,
-      showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true,
-    });
+    showSuccessToast(`${title} added successfully`);
   };
 
   const handleCloseModal = () => {
@@ -138,15 +130,7 @@ const SetupPageTemplate = ({ title, description, icon: _icon, pageIcon, sampleDa
     setEditFormData({ id: null, ...initialFormData });
     setEditErrors({});
     
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'success',
-      title: `${title} updated successfully`,
-      showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true,
-    });
+    showSuccessToast(`${title} updated successfully`);
   };
 
   const handleCloseEditModal = () => {
@@ -162,15 +146,7 @@ const SetupPageTemplate = ({ title, description, icon: _icon, pageIcon, sampleDa
 
   const confirmDelete = () => {
     
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'success',
-      title: `${singularTitle} deleted successfully`,
-      showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true,
-    });
+    showSuccessToast(`${singularTitle} deleted successfully`, 'delete');
     
     setItemToDelete(null);
   };

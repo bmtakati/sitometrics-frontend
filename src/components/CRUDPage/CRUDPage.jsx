@@ -131,7 +131,7 @@ const CRUDPage = ({
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="mx-auto w-full max-w-7xl min-w-0">
       {/* Header */}
       <PageHeader
         icon={pageConfig.icon}

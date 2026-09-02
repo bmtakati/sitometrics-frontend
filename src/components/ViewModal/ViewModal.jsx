@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiCalendar, FiClock } from 'react-icons/fi';
 import SearchableSelect from '../SearchableSelect';
-import { formatDate, formatDateTime, formatTimestamp } from '../../utils/formatDate';
+import { formatDate, formatDateTime, formatTimestamp, formatCellDateValue } from '../../utils/formatDate';
 
 /**
  * Reusable View Modal Component
@@ -92,13 +92,20 @@ const ViewModal = ({
     }
 
     // Handle dates
-    if (field.type === 'date' || (field.accessor && String(field.accessor).includes('date'))) {
+    if (field.type === 'date') {
       return formatDate(value);
     }
 
-    // Handle datetime
-    if (field.type === 'datetime' || (field.accessor && String(field.accessor).endsWith('_at'))) {
+    if (field.type === 'datetime') {
       return formatDateTime(value);
+    }
+
+    const formatted = formatCellDateValue(value, {
+      accessor: field.accessor || field.name,
+      type: field.type,
+    });
+    if (formatted !== null) {
+      return formatted;
     }
 
     // Handle custom render
@@ -196,17 +203,17 @@ const ViewModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-2 backdrop-blur-sm animate-fade-in sm:items-center sm:p-4">
       <div 
         className={`relative w-full max-w-3xl rounded-2xl shadow-2xl ${
           darkMode ? 'bg-gray-800' : 'bg-white'
-        } max-h-[90vh] overflow-y-auto animate-scale-up`}
+        } max-h-[92dvh] overflow-y-auto animate-scale-up sm:max-h-[90vh]`}
       >
         {/* Header */}
-        <div className={`sticky top-0 z-10 relative ${darkMode ? 'border-gray-700' : 'border-gray-300'} overflow-hidden border-b flex items-center justify-between px-6 py-4`}>
-          <div className="flex items-center gap-3 pl-3">
+        <div className={`sticky top-0 z-10 relative ${darkMode ? 'border-gray-700' : 'border-gray-300'} overflow-hidden border-b flex items-start justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4`}>
+          <div className="flex min-w-0 items-center gap-3 pl-0 sm:pl-3">
             {Icon && <Icon className={`w-6 h-6 ${darkMode ? 'text-white' : 'text-gray-900'}`} />}
-            <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{title}</h2>
+            <h2 className={`min-w-0 text-lg font-bold leading-tight sm:text-xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>{title}</h2>
           </div>
           <button
             onClick={onClose}
@@ -217,13 +224,13 @@ const ViewModal = ({
         </div>
 
         {/* Content */}
-        <div className={`p-6 ${darkMode ? 'bg-gray-900' : 'bg-white'} rounded-b-2xl`}>
+        <div className={`p-4 sm:p-6 ${darkMode ? 'bg-gray-900' : 'bg-white'} rounded-b-2xl`}>
 
           {tabs ? (
             /* ── Tabbed layout ── */
             <>
               {/* Tab bar */}
-              <div className={`flex border-b mb-5 -mt-1 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className={`-mx-4 mb-5 -mt-1 flex gap-1 overflow-x-auto border-b px-4 sm:mx-0 sm:px-0 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 {tabs.map((tab) => {
                   const TabIcon = tab.icon;
                   const isActive = (activeTab || tabs[0].id) === tab.id;
@@ -232,7 +239,7 @@ const ViewModal = ({
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                      className={`flex shrink-0 items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
                         isActive
                           ? 'border-primary-500 text-primary-600'
                           : darkMode
@@ -248,7 +255,7 @@ const ViewModal = ({
               </div>
 
               {/* Active tab content */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {(tabs.find((t) => t.id === (activeTab || tabs[0].id))?.fields || []).map((field, idx) => {
                   const value = (field.accessor || field.name || '').split('.').reduce((obj, k) => obj?.[k], item);
                   const displayValue = field.render
@@ -277,7 +284,7 @@ const ViewModal = ({
             </>
           ) : (
             /* ── Flat layout (original) ── */
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 mb-6">
               {fields.map((field, idx) => {
                 const value = field.accessor.split('.').reduce((obj, key) => obj?.[key], item);
                 return (
@@ -305,7 +312,7 @@ const ViewModal = ({
                 }`}>
                   Timestamps
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                   {/* Created At */}
                   {item.created_at && (
                     <div className={`p-4 rounded-xl border ${
@@ -354,12 +361,12 @@ const ViewModal = ({
         </div>
 
         {/* Footer */}
-        <div className={`sticky bottom-0 flex justify-end gap-2 p-6 border-t ${
+        <div className={`sticky bottom-0 flex justify-end gap-2 border-t p-4 sm:p-6 ${
           darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300'
         }`}>
           <button
             onClick={onClose}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+            className={`w-full px-6 py-2 rounded-lg font-medium transition-colors sm:w-auto ${
               darkMode 
                 ? 'bg-gray-700 hover:bg-gray-600 text-white' 
                 : 'bg-gray-200 hover:bg-gray-300 text-gray-700'

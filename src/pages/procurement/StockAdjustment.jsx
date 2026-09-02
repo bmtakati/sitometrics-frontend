@@ -107,6 +107,7 @@ const StockAdjustment = () => {
   const formFields = [
     { name: 'store_id', label: 'Store ID', type: 'number', required: true },
     { name: 'adjustment_date', label: 'Adjustment Date', type: 'date', required: true },
+    { name: 'status_id', label: 'Status', type: 'status_id', required: true },
     { name: 'workflow_status', label: 'Workflow Status', type: 'select', required: true, options: WORKFLOW_OPTIONS },
     { name: 'remarks', label: 'Remarks', type: 'textarea', rows: 3, required: false },
     {
@@ -121,7 +122,6 @@ const StockAdjustment = () => {
         2
       )
     },
-    { name: 'status_id', label: 'Status', type: 'status_id', required: true },
   ];
 
   return (

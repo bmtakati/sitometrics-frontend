@@ -56,7 +56,8 @@ const CategoryItemsEditor = ({
 
       {errorMessage ? <p className="text-xs text-red-500">{errorMessage}</p> : null}
 
-      <div className={`overflow-hidden rounded-xl border ${borderClass}`}>
+      <div className={`overflow-x-auto rounded-xl border ${borderClass}`}>
+        <div className={showPrice ? 'min-w-[620px]' : 'min-w-[500px]'}>
         <div
           className={`grid ${gridCols} gap-2 border-b px-3 py-2 text-xs font-semibold uppercase tracking-wide ${darkMode ? 'border-gray-600 bg-gray-800/60 text-gray-400' : 'border-gray-200 bg-gray-50 text-gray-500'}`}
         >
@@ -105,6 +106,7 @@ const CategoryItemsEditor = ({
             </button>
           </div>
         ))}
+        </div>
       </div>
     </div>
   );

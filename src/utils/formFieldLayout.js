@@ -50,5 +50,5 @@ export function shouldFieldSpanFullWidth(field) {
   if (field?.fullWidth === false) return false;
   if (isDescriptionField(field)) return false;
 
-  return field?.type === 'textarea' || field?.type === 'custom' || field?.type === 'file' || field?.type === 'checkbox';
+  return field?.type === 'textarea' || field?.type === 'file' || field?.type === 'checkbox';
 }

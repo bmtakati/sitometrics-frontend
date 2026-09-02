@@ -3,9 +3,11 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const appName = env.VITE_APP_NAME || 'SQAS';
+  const appName = env.VITE_APP_NAME || 'SITOMETRICS';
 
-  const apiTarget = (env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+  const apiTarget = (env.VITE_API_BASE_URL || 'http://127.0.0.1:8000')
+    .replace(/\/$/, '')
+    .replace('://localhost', '://127.0.0.1');
 
   return {
     plugins: [
@@ -18,10 +20,15 @@ export default defineConfig(({ mode }) => {
       },
     ],
     server: {
-      port: 3000,
+      port: 3004,
       open: true,
       // Same-origin /storage in dev → avoids CORS when preview/download/print hits Laravel files
       proxy: {
+        '/api': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+        },
         '/storage': {
           target: apiTarget,
           changeOrigin: true,

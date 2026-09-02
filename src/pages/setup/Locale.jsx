@@ -160,18 +160,18 @@ const Locale = () => {
       min: 0,
     },
     {
+      name: 'status_id',
+      label: 'Status',
+      type: 'status_id',
+      required: true,
+    },
+    {
       name: 'flag',
       label: 'Flag image',
       type: 'file',
       required: false,
       accept: 'image/png,image/jpeg,image/gif,image/webp,image/svg+xml',
       helpText: 'PNG, JPG, GIF, WebP, or SVG (max 2MB). When editing, leave empty to keep the current flag.',
-    },
-    {
-      name: 'status_id',
-      label: 'Status',
-      type: 'status_id',
-      required: true,
     },
   ];
 

@@ -82,15 +82,15 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
     : 'bg-emerald-50 text-emerald-800 font-medium border-l-2 border-emerald-600 shadow-sm shadow-emerald-100/60';
 
   const inactiveItemClass = darkMode
-    ? 'text-stone-300 border-l-2 border-transparent hover:border-emerald-500 hover:bg-emerald-500/20 hover:text-emerald-200 hover:translate-x-0.5 hover:shadow-sm hover:shadow-emerald-950/20'
+    ? 'text-gray-300 border-l-2 border-transparent hover:border-emerald-500 hover:bg-gray-800/80 hover:text-emerald-200 hover:translate-x-0.5 hover:shadow-sm hover:shadow-black/20'
     : 'text-stone-600 border-l-2 border-transparent hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 hover:translate-x-0.5 hover:shadow-sm hover:shadow-emerald-100/50';
 
   const childActiveClass = darkMode
-    ? 'bg-stone-800/90 text-emerald-300 font-medium border-l-2 border-emerald-400'
+    ? 'bg-gray-800/90 text-emerald-300 font-medium border-l-2 border-emerald-400'
     : 'bg-emerald-50/80 text-emerald-800 font-medium border-l-2 border-emerald-600';
 
   const childInactiveClass = darkMode
-    ? 'text-stone-400 border-l-2 border-transparent hover:border-emerald-500/80 hover:bg-emerald-500/15 hover:text-emerald-300 hover:translate-x-0.5'
+    ? 'text-gray-400 border-l-2 border-transparent hover:border-emerald-500/80 hover:bg-gray-800/70 hover:text-emerald-300 hover:translate-x-0.5'
     : 'text-stone-500 border-l-2 border-transparent hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 hover:translate-x-0.5';
 
   const iconHoverClass = 'transition-all duration-200 group-hover:scale-110 group-hover:text-emerald-500';
@@ -154,13 +154,29 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
       pinned: true,
       children: [
         { id: 'suppliers', label: 'Suppliers', path: '/procurement/suppliers', icon: FiTruck, color: 'text-blue-600' },
-        { id: 'purchase-requisitions', label: 'Purchase Requisitions', path: '/procurement/purchase-requisitions', icon: FiClipboard, color: 'text-orange-600' },
+        ...(hasPerm('view-purchase-requisitions') || hasPerm('manage-purchase-requisitions')
+          ? [{ id: 'purchase-requisitions', label: 'Purchase Requisitions', path: '/procurement/purchase-requisitions', icon: FiClipboard, color: 'text-orange-600' }]
+          : []),
         { id: 'local-purchase-orders', label: 'Local Purchase Orders', path: '/procurement/local-purchase-orders', icon: FiFileText, color: 'text-indigo-600' },
         { id: 'goods-received-notes', label: 'Goods Received Notes', path: '/procurement/goods-received-notes', icon: FiInbox, color: 'text-green-600' },
         { id: 'store-requests', label: 'Store Requests', path: '/procurement/store-requests', icon: FiRepeat, color: 'text-violet-600' },
         { id: 'store-issues', label: 'Store Issues', path: '/procurement/store-issues', icon: FiSend, color: 'text-blue-600' },
         { id: 'stock-adjustments', label: 'Stock Adjustments', path: '/procurement/stock-adjustments', icon: FiSliders, color: 'text-rose-600' },
         { id: 'stock-count-sessions', label: 'Stock Count Sessions', path: '/procurement/stock-count-sessions', icon: FiClipboard, color: 'text-teal-600' },
+      ]
+    },
+    {
+      id: 'service',
+      label: 'Service',
+      icon: FiUsers,
+      color: 'text-primary-600',
+      bgColor: 'bg-sky-50',
+      pinned: true,
+      children: [
+        { id: 'waiter-orders', label: 'Waiter Orders', path: '/service/waiter-orders', icon: FiCoffee, color: 'text-emerald-600' },
+        { id: 'kitchen-queue', label: 'Kitchen Queue', path: '/service/kitchen-queue', icon: FiCoffee, color: 'text-orange-600' },
+        { id: 'bar-queue', label: 'Bar Queue', path: '/service/bar-queue', icon: FiDroplet, color: 'text-cyan-600' },
+        ...(hasPerm('view-cashier-sales') ? [{ id: 'cashier', label: 'Cashier Sales', path: '/service/cashier', icon: FiDollarSign, color: 'text-green-600' }] : []),
       ]
     },
     {
@@ -305,7 +321,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
             )}
           </button>
           {!isCollapsed && isExpanded && (
-            <ul className={`mt-1 space-y-0.5 border-l pl-3 ml-8 ${darkMode ? 'border-stone-700' : 'border-stone-200'}`}>
+            <ul className={`mt-1 space-y-0.5 border-l pl-3 ml-8 ${darkMode ? 'border-gray-700' : 'border-stone-200'}`}>
               {item.children.map((child, index) => renderMenuItem(child, level + 1, index === item.children.length - 1))}
             </ul>
           )}
@@ -358,8 +374,8 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
       <aside
         className={`fixed left-0 top-0 z-50 h-screen border-r transition-all duration-300 lg:z-30
           ${darkMode
-            ? 'border-stone-800 bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 shadow-xl shadow-black/30'
-            : 'border-stone-200 bg-gradient-to-b from-white via-stone-50 to-emerald-50/30 shadow-lg shadow-stone-200/50'
+            ? 'border-gray-700 bg-gray-900 shadow-xl shadow-black/30'
+            : 'border-emerald-100 bg-gradient-to-b from-emerald-50 via-slate-50 to-white shadow-lg shadow-emerald-100/60'
           }
           ${isCollapsed ? 'w-20' : 'w-72'}
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -369,7 +385,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className={`relative flex h-16 items-center justify-between border-b px-4 ${
-            darkMode ? 'border-stone-800' : 'border-stone-200'
+            darkMode ? 'border-gray-700' : 'border-emerald-100'
           }`}>
             <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-emerald-500/70 to-transparent" aria-hidden />
             {!isCollapsed ? (
@@ -379,7 +395,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
                   onClick={onClose}
                   className={`hidden rounded-lg p-2 transition-all duration-200 lg:flex ${
                     darkMode
-                      ? 'text-stone-400 hover:bg-emerald-500/20 hover:text-emerald-300 hover:scale-105'
+                      ? 'text-gray-400 hover:bg-gray-800/80 hover:text-emerald-300 hover:scale-105'
                       : 'text-stone-500 hover:bg-emerald-50 hover:text-emerald-700 hover:scale-105'
                   }`}
                   aria-label="Toggle sidebar"

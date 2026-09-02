@@ -16,6 +16,8 @@ import {
   FiGlobe,
   FiImage,
   FiDatabase,
+  FiCreditCard,
+  FiClipboard,
 } from 'react-icons/fi';
 
 export const setupMenuChildren = [
@@ -27,6 +29,7 @@ export const setupMenuChildren = [
     children: [
       { id: 'hotels', label: 'Hotels', path: '/setup/hotels', icon: FiHome, color: 'text-emerald-600' },
       { id: 'outlets', label: 'Outlets', path: '/setup/outlets', icon: FiCoffee, color: 'text-orange-600' },
+      { id: 'order-types', label: 'Order Types', path: '/setup/order-types', icon: FiClipboard, color: 'text-sky-600' },
     ],
   },
   {
@@ -61,6 +64,7 @@ export const setupMenuChildren = [
     color: 'text-green-600',
     children: [
       { id: 'currencies', label: 'Currency', path: '/setup/currencies', icon: FiDollarSign, color: 'text-green-600' },
+      { id: 'payment-methods', label: 'Payment Methods', path: '/setup/payment-methods', icon: FiCreditCard, color: 'text-emerald-600' },
       { id: 'exchange-rates', label: 'Exchange Rates', path: '/setup/exchange-rates', icon: FiRefreshCw, color: 'text-teal-600' },
       { id: 'locales', label: 'Locales', path: '/setup/locales', icon: FiGlobe, color: 'text-indigo-600' },
     ],
@@ -80,6 +84,7 @@ export const setupMenuChildren = [
 export const setupRoutes = [
   { path: 'setup/hotels', component: 'Hotel' },
   { path: 'setup/outlets', component: 'Outlet' },
+  { path: 'setup/order-types', component: 'OrderType' },
   { path: 'setup/modules', component: 'Module' },
   { path: 'setup/statuses', component: 'Statuses' },
   { path: 'setup/status-groups', component: 'StatusGroups' },
@@ -90,6 +95,7 @@ export const setupRoutes = [
   { path: 'setup/item', component: 'Item' },
   { path: 'setup/unit', component: 'Unit' },
   { path: 'setup/currencies', component: 'Currency' },
+  { path: 'setup/payment-methods', component: 'PaymentMethod' },
   { path: 'setup/exchange-rates', component: 'ExchangeRate' },
   { path: 'setup/locales', component: 'Locale' },
   { path: 'setup/slideshow-slides', component: 'SlideshowSlides' },

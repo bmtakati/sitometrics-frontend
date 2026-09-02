@@ -34,7 +34,8 @@ import { normalizeFormFieldsForLayout } from '../../utils/formFieldLayout';
  *   options: array,      // For select: [{ value, label }]
  *   rows: number,        // For textarea: number of rows
  *   disabled: boolean,   // Whether field is disabled
- *   autoFocus: boolean   // Whether field should auto-focus
+ *   autoFocus: boolean,  // Whether field should auto-focus
+ *   fullWidth: boolean   // Force full row span in two-col layout (editors/uploads)
  * }
  */
 const FormModal = ({
@@ -443,19 +444,19 @@ const FormModal = ({
   const currentTabId = activeTab || normalizedTabs?.[0]?.id;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 backdrop-blur-sm sm:items-center sm:p-4">
       <div 
         className="absolute inset-0" 
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className={`relative ${darkMode ? 'bg-stone-900' : 'bg-white'} w-full ${maxWidth} max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl`}>
+      <div className={`relative ${darkMode ? 'bg-stone-900' : 'bg-white'} w-full ${maxWidth} max-h-[92dvh] overflow-y-auto rounded-2xl shadow-2xl sm:max-h-[90vh]`}>
         {/* Header */}
-        <div className={`relative flex items-center justify-between overflow-hidden border-b px-6 py-4 ${
+        <div className={`sticky top-0 z-20 relative flex items-start justify-between gap-3 overflow-hidden border-b px-4 py-3 sm:px-6 sm:py-4 ${
           darkMode ? 'border-stone-700 bg-stone-900' : 'border-stone-200 bg-gradient-to-r from-white via-emerald-50/30 to-amber-50/20'
         }`}>
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500 to-transparent" aria-hidden />
-          <div className="flex items-start gap-3 pl-1">
+          <div className="flex min-w-0 items-start gap-3 pl-0 sm:pl-1">
             <div className={`rounded-xl border p-2.5 ${
               darkMode ? 'border-emerald-800/60 bg-emerald-950/50' : 'border-emerald-100 bg-emerald-50'
             }`}>
@@ -465,8 +466,8 @@ const FormModal = ({
                 <FiPlus className={`h-5 w-5 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
               )}
             </div>
-            <div>
-              <h2 className={`text-xl font-bold ${darkMode ? 'text-stone-50' : 'text-stone-900'}`}>
+            <div className="min-w-0">
+              <h2 className={`text-lg font-bold leading-tight sm:text-xl ${darkMode ? 'text-stone-50' : 'text-stone-900'}`}>
                 {modalTitle}
               </h2>
               <p className={`mt-1 text-sm ${darkMode ? 'text-stone-400' : 'text-stone-600'}`}>
@@ -486,7 +487,7 @@ const FormModal = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={readOnly ? (e) => e.preventDefault() : onSubmit} className="space-y-6 p-6">
+        <form onSubmit={readOnly ? (e) => e.preventDefault() : onSubmit} className="space-y-5 p-4 sm:space-y-6 sm:p-6">
           {/* Global Error */}
           {errors.submit && (
             <div className={`${darkMode ? 'bg-red-900/30 border-red-800' : 'bg-red-50 border-red-200'} border rounded-lg p-4 mb-4`}>
@@ -515,7 +516,7 @@ const FormModal = ({
           {normalizedTabs ? (
             <>
               {/* Tab bar */}
-              <div className={`flex border-b -mt-2 mb-2 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className={`-mx-4 mb-2 -mt-2 flex gap-1 overflow-x-auto border-b px-4 sm:mx-0 sm:px-0 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                 {normalizedTabs.map((tab) => {
                   const TabIcon = tab.icon;
                   const isActive = currentTabId === tab.id;
@@ -526,7 +527,7 @@ const FormModal = ({
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveTab(tab.id)}
-                      className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                      className={`relative flex shrink-0 items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors sm:px-4 ${
                         isActive
                           ? 'border-primary-500 text-primary-600'
                           : darkMode
@@ -606,12 +607,12 @@ const FormModal = ({
           )}
 
           {/* Action Buttons */}
-          <div className="flex justify-end pt-4">
+          <div className="flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:justify-end">
             {readOnly ? (
               <button
                 type="button"
                 onClick={onClose}
-                className={`px-6 py-2 border rounded-xl transition-all duration-200 font-medium ${
+                className={`w-full px-6 py-2 border rounded-xl transition-all duration-200 font-medium sm:w-auto ${
                   darkMode
                     ? 'border-gray-600 text-gray-300 hover:bg-gray-800'
                     : 'border-gray-300 text-gray-700 hover:bg-gray-100'
@@ -623,7 +624,7 @@ const FormModal = ({
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`px-6 py-2 border-2 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`w-full px-6 py-2 border-2 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto ${
                   darkMode
                     ? 'border-green-500 text-green-400 hover:bg-green-500 hover:text-white'
                     : 'border-green-600 text-green-600 hover:bg-green-600 hover:text-white'

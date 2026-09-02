@@ -1095,11 +1095,11 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section with Slider and Info Panel */}
-      <section id="home" className="relative min-h-screen lg:h-screen overflow-hidden pt-16 bg-white">
-        <div className={`flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] lg:h-full ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+      <section id="home" className={`relative overflow-hidden pt-16 lg:min-h-screen lg:h-screen ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+        <div className={`flex flex-col lg:flex-row min-h-[calc(100svh-4rem)] lg:h-full ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
           {/* Left Side - Image Slider (70%) */}
           <div 
-            className={`slider-area relative w-full lg:w-[70%] h-[58vh] min-h-[320px] sm:h-[62vh] sm:min-h-[380px] lg:flex-none lg:h-[calc(100%-2.5rem)] lg:min-h-0 shadow-xl lg:order-1 m-0 lg:mt-5 lg:ml-5 lg:mb-5 rounded-none lg:rounded-3xl overflow-hidden shrink-0 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}
+            className={`slider-area relative w-full h-[clamp(320px,58svh,520px)] sm:h-[clamp(380px,62svh,600px)] lg:w-[70%] lg:flex-none lg:h-[calc(100%-2.5rem)] shadow-xl lg:order-1 m-0 lg:mt-5 lg:ml-5 lg:mb-5 rounded-none lg:rounded-3xl overflow-hidden shrink-0 touch-pan-y ${darkMode ? 'bg-gray-900' : 'bg-white'}`}
             onMouseEnter={() => setIsSliderPaused(true)}
             onMouseLeave={() => setIsSliderPaused(false)}
             role="region"
@@ -1130,19 +1130,19 @@ const LandingPage = () => {
                 />
                 <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient}`} />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="container mx-auto px-6 lg:px-12 text-center">
-                    <h2 className="text-3xl md:text-4xl lg:text-6xl font-extrabold text-white mb-6 fade-in drop-shadow-2xl tracking-tight">
+                  <div className="mx-auto w-full max-w-5xl px-14 py-10 text-center sm:px-16 lg:px-12">
+                    <h2 className="text-[clamp(1.75rem,8vw,2.75rem)] sm:text-4xl lg:text-6xl font-extrabold text-white mb-3 sm:mb-5 lg:mb-6 fade-in drop-shadow-2xl tracking-tight leading-tight">
                       {slide.title}
                     </h2>
-                    <p className="text-base md:text-lg lg:text-xl text-gray-50 mb-8 max-w-2xl mx-auto fade-in drop-shadow-lg font-medium">
+                    <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-50 mb-5 sm:mb-7 lg:mb-8 max-w-2xl mx-auto fade-in drop-shadow-lg font-medium leading-relaxed">
                       {slide.description}
                     </p>
-                    <div className="flex gap-4 justify-center fade-in flex-wrap">
+                    <div className="flex flex-col min-[420px]:flex-row gap-3 sm:gap-4 justify-center fade-in">
                       <button 
                         onClick={handleGetStarted}
                         disabled={getStartedLoading}
                         aria-label="Get started with SITOMETRICS"
-                        className="btn bg-white text-primary-600 hover:bg-gray-100 px-8 py-3 text-base font-semibold disabled:opacity-70 disabled:cursor-not-allowed shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
+                        className="btn w-full min-[420px]:w-auto bg-white text-primary-600 hover:bg-gray-100 px-5 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base font-semibold disabled:opacity-70 disabled:cursor-not-allowed shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
                       >
                         {getStartedLoading ? (
                           <span className="flex items-center justify-center gap-2">
@@ -1157,7 +1157,7 @@ const LandingPage = () => {
                         onClick={handleLearnMore}
                         disabled={learnMoreLoading}
                         aria-label="Learn more about SITOMETRICS"
-                        className="btn bg-white/10 backdrop-blur-md border-2 border-white text-white hover:bg-white hover:text-gray-900 px-8 py-3 text-base font-semibold disabled:opacity-70 disabled:cursor-not-allowed shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
+                        className="btn w-full min-[420px]:w-auto bg-white/10 backdrop-blur-md border-2 border-white text-white hover:bg-white hover:text-gray-900 px-5 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base font-semibold disabled:opacity-70 disabled:cursor-not-allowed shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
                       >
                         {learnMoreLoading ? (
                           <span className="flex items-center justify-center gap-2">
@@ -1178,20 +1178,20 @@ const LandingPage = () => {
             <button
               onClick={prevSlide}
               aria-label="Previous slide"
-              className="absolute left-4 lg:left-6 top-1/2 -translate-y-1/2 p-3 lg:p-4 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md transition-all duration-300 z-10 shadow-xl hover:shadow-2xl transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
+              className="absolute left-2 sm:left-4 lg:left-6 top-1/2 -translate-y-1/2 p-2 sm:p-3 lg:p-4 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md transition-all duration-300 z-10 shadow-xl hover:shadow-2xl transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
             >
-              <FiChevronLeft className="w-5 h-5 lg:w-6 lg:h-6 text-white drop-shadow-lg" />
+              <FiChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white drop-shadow-lg" />
             </button>
             <button
               onClick={nextSlide}
               aria-label="Next slide"
-              className="absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 p-3 lg:p-4 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md transition-all duration-300 z-10 shadow-xl hover:shadow-2xl transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
+              className="absolute right-2 sm:right-4 lg:right-6 top-1/2 -translate-y-1/2 p-2 sm:p-3 lg:p-4 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md transition-all duration-300 z-10 shadow-xl hover:shadow-2xl transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
             >
-              <FiChevronRight className="w-5 h-5 lg:w-6 lg:h-6 text-white drop-shadow-lg" />
+              <FiChevronRight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white drop-shadow-lg" />
             </button>
 
             {/* Slider Indicators */}
-            <div className="absolute bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-10">
+            <div className="absolute bottom-4 sm:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 flex gap-2 sm:gap-3 z-10">
               {slidesList.map((slide, index) => (
                 <button
                   key={index}
@@ -1200,7 +1200,7 @@ const LandingPage = () => {
                   title={slide.title}
                   className={`h-2 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 ${
                     index === currentSlide 
-                      ? 'w-10 bg-white transform scale-110' 
+                      ? 'w-8 sm:w-10 bg-white transform scale-110' 
                       : 'w-2 bg-white/50 hover:bg-white/70 hover:scale-110'
                   }`}
                 />
@@ -1209,31 +1209,31 @@ const LandingPage = () => {
           </div>
 
           {/* Right Side - System Info Panel (30%) */}
-          <div className={`info-panel relative lg:w-[30%] flex-1 min-h-0 lg:min-h-0 lg:h-full flex flex-col items-center justify-center px-6 py-8 lg:px-8 lg:py-0 overflow-hidden lg:order-2 shadow-2xl ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+          <div className={`info-panel relative lg:w-[30%] flex-1 min-h-0 lg:min-h-0 lg:h-full flex flex-col items-center justify-center px-5 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-0 overflow-hidden lg:order-2 shadow-2xl ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
             {/* Vertical Flag Divider */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-64 flex flex-col rounded-l-lg overflow-hidden shadow-lg">
+            <div className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-64 flex-col rounded-l-lg overflow-hidden shadow-lg">
               <div className={`flex-1 ${darkMode ? 'bg-gray-700' : 'bg-gray-900'}`}></div>
             </div>
 
-            <div className="relative z-10 text-center space-y-5 max-w-sm animate-fade-in">
+            <div className="relative z-10 text-center space-y-3 sm:space-y-5 max-w-sm animate-fade-in">
               <div className="animate-slide-up" style={{ animationDelay: '0s' }}>
-                <BrandMark className="w-32 h-32" darkMode={darkMode} />
+                <BrandMark className="w-20 h-20 sm:w-28 sm:h-28 lg:w-32 lg:h-32" darkMode={darkMode} />
               </div>
 
               <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                <h3 className={`text-l font-semibold tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-base sm:text-lg font-semibold tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   SITOMETRICS ERP
                 </h3>
               </div>
 
               <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                <p className={`text-xl font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <p className={`text-base sm:text-xl font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   Food & Beverage Operations Platform
                 </p>
               </div>
 
               <div className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
-                <h2 className={`text-xl font-extrabold ${darkMode ? 'text-green-400' : 'bg-gradient-to-r from-green-600 via-green-600 to-green-600 bg-clip-text text-transparent'} drop-shadow-lg filter hover:drop-shadow-2xl transition-all duration-300 hover:scale-105 cursor-default`}>
+                <h2 className={`text-lg sm:text-xl font-extrabold ${darkMode ? 'text-green-400' : 'bg-gradient-to-r from-green-600 via-green-600 to-green-600 bg-clip-text text-transparent'} drop-shadow-lg filter hover:drop-shadow-2xl transition-all duration-300 hover:scale-105 cursor-default`}>
                   Inventory · Procurement · Costing
                 </h2>
               </div>
@@ -1245,7 +1245,7 @@ const LandingPage = () => {
               </div>
 
               {/* Login Button */}
-              <div className="pt-4 animate-slide-up" style={{ animationDelay: '0.7s' }}>
+              <div className="pt-2 sm:pt-4 animate-slide-up" style={{ animationDelay: '0.7s' }}>
                 <button
                   onClick={() => setShowLoginModal(true)}
                   aria-label="Open login modal"

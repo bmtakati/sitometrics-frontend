@@ -14,7 +14,7 @@ import apiFetch from '../../utils/apiFetch';
  * @param {function} onChange - Called with new array of IDs on change
  * @param {object}   errors   - Validation errors (reads errors.role_ids)
  */
-const RolePicker = ({ value = [], onChange, errors = {} }) => {
+const RolePicker = ({ value = [], onChange, errors = {}, darkMode = false }) => {
   const [roles, setRoles]         = useState([]);
   const [loading, setLoading]     = useState(true);
   const [fetchError, setFetchError] = useState(null);
@@ -72,7 +72,7 @@ const RolePicker = ({ value = [], onChange, errors = {} }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-gray-500 text-sm py-3">
+      <div className={`flex items-center gap-2 text-sm py-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
         <FiLoader className="w-4 h-4 animate-spin" />
         Loading roles…
       </div>
@@ -81,7 +81,7 @@ const RolePicker = ({ value = [], onChange, errors = {} }) => {
 
   if (fetchError) {
     return (
-      <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+      <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
         <FiAlertCircle className="w-4 h-4 flex-shrink-0" />
         {fetchError}
       </div>
@@ -89,7 +89,7 @@ const RolePicker = ({ value = [], onChange, errors = {} }) => {
   }
 
   if (!roles.length) {
-    return <p className="text-sm text-gray-400 italic">No roles available.</p>;
+    return <p className={`text-sm italic ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>No roles available.</p>;
   }
 
   const selectedRoles = roles.filter((r) => selected.has(r.id));
@@ -97,11 +97,11 @@ const RolePicker = ({ value = [], onChange, errors = {} }) => {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="flex items-center gap-1 text-sm font-medium text-gray-600">
+        <label className={`flex items-center gap-1 text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
           <FiShield className="w-4 h-4 text-primary-600" />
           Roles *
         </label>
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+        <label className={`flex items-center gap-1.5 text-xs cursor-pointer select-none ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
           <div
             onClick={toggleAll}
             className={`w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer transition-colors
@@ -109,7 +109,7 @@ const RolePicker = ({ value = [], onChange, errors = {} }) => {
                 ? 'bg-primary-600 border-primary-600'
                 : isIndeterminate
                   ? 'bg-primary-100 border-primary-400'
-                  : 'border-gray-300 hover:border-primary-400'}`}
+                  : darkMode ? 'border-gray-600 hover:border-primary-400' : 'border-gray-300 hover:border-primary-400'}`}
           >
             {isAllSelected && <FiCheck className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
             {isIndeterminate && <span className="w-2 h-0.5 bg-primary-600 block" />}
@@ -120,7 +120,7 @@ const RolePicker = ({ value = [], onChange, errors = {} }) => {
 
       {/* Selected role chips */}
       {selectedRoles.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3 p-2.5 bg-primary-50 border border-primary-200 rounded-lg">
+        <div className="flex flex-wrap gap-1.5 mb-3 p-2.5 bg-primary-50 border border-primary-200 rounded-lg dark:border-primary-900/60 dark:bg-primary-950/30">
           {selectedRoles.map((role) => (
             <span
               key={role.id}
@@ -142,28 +142,32 @@ const RolePicker = ({ value = [], onChange, errors = {} }) => {
 
       {/* Search box */}
       <div className="relative mb-2">
-        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+        <FiSearch className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search roles…"
-          className="w-full pl-8 pr-8 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-gray-900 placeholder-gray-400"
+          className={`w-full pl-8 pr-8 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            darkMode
+              ? 'border-gray-600 bg-gray-800 text-gray-100 placeholder-gray-500'
+              : 'border-gray-300 bg-white text-gray-900 placeholder-gray-400'
+          }`}
         />
         {search && (
           <button
             type="button"
             onClick={() => setSearch('')}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className={`absolute right-2.5 top-1/2 -translate-y-1/2 ${darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
           >
             <FiX className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
 
-      <div className="border border-gray-300 rounded-lg overflow-hidden max-h-64 overflow-y-auto bg-white">
+      <div className={`border rounded-lg overflow-hidden max-h-64 overflow-y-auto ${darkMode ? 'border-gray-600 bg-gray-900' : 'border-gray-300 bg-white'}`}>
         {filtered.length === 0 ? (
-          <p className="text-sm text-gray-400 italic px-4 py-3">No roles match your search.</p>
+          <p className={`text-sm italic px-4 py-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>No roles match your search.</p>
         ) : (
           (() => {
             // Group filtered roles by geographical level
@@ -176,35 +180,37 @@ const RolePicker = ({ value = [], onChange, errors = {} }) => {
             return Object.entries(groups).map(([level, list]) => (
               <div key={level}>
                 {/* Group header */}
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white border-b border-gray-100 sticky top-0 z-10">
+                <div className={`flex items-center gap-1.5 px-3 py-1.5 border-b sticky top-0 z-10 ${darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-100 bg-white'}`}>
                   <FiLayers className="w-3 h-3 text-indigo-400 flex-shrink-0" />
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">{level}</span>
-                  <span className="ml-auto text-xs text-gray-300">
+                  <span className={`text-xs font-semibold uppercase tracking-wide ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{level}</span>
+                  <span className={`ml-auto text-xs ${darkMode ? 'text-gray-600' : 'text-gray-300'}`}>
                     {list.filter((r) => selected.has(r.id)).length}/{list.length}
                   </span>
                 </div>
                 {/* Roles in group */}
-                <div className="divide-y divide-gray-100">
+                <div className={darkMode ? 'divide-y divide-gray-800' : 'divide-y divide-gray-100'}>
                   {list.map((role) => {
                     const isChecked = selected.has(role.id);
                     return (
                       <label
                         key={role.id}
                         className={`flex items-start gap-3 px-4 py-2.5 cursor-pointer transition-colors select-none
-                          ${isChecked ? 'bg-primary-50' : 'bg-white hover:bg-gray-50'}`}
+                          ${isChecked
+                            ? darkMode ? 'bg-primary-950/40' : 'bg-primary-50'
+                            : darkMode ? 'bg-gray-900 hover:bg-gray-800' : 'bg-white hover:bg-gray-50'}`}
                       >
                         <div className="mt-0.5 flex-shrink-0">
                           <div
                             className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors
-                              ${isChecked ? 'bg-primary-600 border-primary-600' : 'border-gray-300'}`}
+                              ${isChecked ? 'bg-primary-600 border-primary-600' : darkMode ? 'border-gray-600' : 'border-gray-300'}`}
                           >
                             {isChecked && <FiCheck className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                           </div>
                         </div>
                         <div className="flex-1 min-w-0" onClick={() => toggle(role.id)}>
-                          <p className="text-sm font-medium text-gray-900">{role.name}</p>
+                          <p className={`text-sm font-medium ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{role.name}</p>
                           {role.description && (
-                            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{role.description}</p>
+                            <p className={`text-xs mt-0.5 line-clamp-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{role.description}</p>
                           )}
                         </div>
                       </label>
@@ -221,7 +227,7 @@ const RolePicker = ({ value = [], onChange, errors = {} }) => {
         <p className="mt-1 text-sm text-red-600">{errors.role_ids}</p>
       )}
       {!errors.role_ids && value.length === 0 && (
-        <p className="mt-1 text-xs text-gray-400">Select at least one role</p>
+        <p className={`mt-1 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Select at least one role</p>
       )}
     </div>
   );

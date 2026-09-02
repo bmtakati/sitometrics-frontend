@@ -145,6 +145,7 @@ const FoodCategory = () => {
               {
                 name: 'foods',
                 type: 'custom',
+                fullWidth: true,
                 render: (formData, onInputChange, errors, darkMode) => (
                   <CategoryItemsEditor
                     fieldName="foods"

@@ -1,6 +1,8 @@
 // Export utilities for PDF and Excel generation
 // Install these packages: npm install jspdf jspdf-autotable exceljs
 
+import { buildHotelHeaderLines } from './reportHotel';
+
 const loadPdfLibs = async () => {
   const [jspdfMod, autotableMod] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
   const jsPDF = jspdfMod.jsPDF || jspdfMod.default;
@@ -13,45 +15,66 @@ const loadPdfLibs = async () => {
   return { jsPDF, autoTable };
 };
 
+const formatHeaderLabel = (header) => header.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+
 /**
  * Export data to PDF
  * @param {string} reportName - Name of the report
  * @param {Array} data - Array of data objects
  * @param {Array} headers - Array of header names
+ * @param {{ hotel?: object, subtitle?: string }} options
  */
-export const exportToPDF = async (reportName, data, headers) => {
+export const exportToPDF = async (reportName, data, headers, options = {}) => {
   try {
+    const { hotel, subtitle } = options;
     const { jsPDF, autoTable } = await loadPdfLibs();
 
     const doc = new jsPDF();
-    
-    // Add title
-    doc.setFontSize(18);
-    doc.text(reportName, 14, 20);
-    
-    // Add date
+    let startY = 14;
+
+    if (hotel?.name) {
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text(hotel.name, 14, startY);
+      startY += 8;
+
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      buildHotelHeaderLines(hotel).forEach((line) => {
+        doc.text(line, 14, startY);
+        startY += 5;
+      });
+      startY += 4;
+    }
+
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text(reportName, 14, startY);
+    startY += 8;
+
     doc.setFontSize(10);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 30);
-    
-    // Prepare table data
-    const tableData = data.map(row => 
-      headers.map(header => row[header] || 'N/A')
-    );
-    
-    // Generate table
+    doc.setFont(undefined, 'normal');
+    if (subtitle) {
+      doc.text(subtitle, 14, startY);
+      startY += 6;
+    }
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, startY);
+    startY += 8;
+
+    const tableData = data.map((row) => headers.map((header) => row[header] ?? 'N/A'));
+
     autoTable(doc, {
-      head: [headers.map(h => h.replace(/([A-Z])/g, ' $1').trim())],
+      head: [headers.map(formatHeaderLabel)],
       body: tableData,
-      startY: 35,
+      startY,
       theme: 'grid',
       styles: { fontSize: 9 },
-      headStyles: { fillColor: [59, 130, 246] }, // Blue color
+      headStyles: { fillColor: [5, 150, 105] },
     });
-    
-    // Save the PDF
+
     doc.save(`${reportName.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -60,28 +83,55 @@ export const exportToPDF = async (reportName, data, headers) => {
  * Export data to Excel
  * @param {string} reportName - Name of the report
  * @param {Array} data - Array of data objects
+ * @param {{ hotel?: object, subtitle?: string }} options
  */
-export const exportToExcel = async (reportName, data) => {
+export const exportToExcel = async (reportName, data, options = {}) => {
   try {
-    // Dynamic import to reduce bundle size
+    const { hotel, subtitle } = options;
     const ExcelJS = (await import('exceljs')).default;
 
-    // Create workbook and worksheet
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Report Data');
+    let rowNum = 1;
 
-    // Add columns and rows from data
-    const firstRow = Array.isArray(data) && data.length > 0 ? data[0] : null;
-    if (firstRow && typeof firstRow === 'object' && !Array.isArray(firstRow)) {
-      ws.columns = Object.keys(firstRow).map(key => ({ header: key, key }));
-      data.forEach(row => {
-        if (row && typeof row === 'object' && !Array.isArray(row)) {
-          ws.addRow(row);
-        }
-      });
+    const addTextRow = (value, style = {}) => {
+      const row = ws.getRow(rowNum++);
+      row.getCell(1).value = value;
+      if (style.bold) row.getCell(1).font = { bold: true, size: style.size || 11 };
+      return row;
+    };
+
+    if (hotel?.name) {
+      addTextRow(hotel.name, { bold: true, size: 14 });
+      buildHotelHeaderLines(hotel).forEach((line) => addTextRow(line));
+      rowNum += 1;
     }
 
-    // Generate buffer and trigger download
+    addTextRow(reportName, { bold: true, size: 12 });
+    if (subtitle) addTextRow(subtitle);
+    addTextRow(`Generated: ${new Date().toLocaleString()}`);
+    rowNum += 1;
+
+    const firstRow = Array.isArray(data) && data.length > 0 ? data[0] : null;
+    if (firstRow && typeof firstRow === 'object' && !Array.isArray(firstRow)) {
+      const keys = Object.keys(firstRow);
+      const headerRow = ws.getRow(rowNum++);
+      keys.forEach((key, index) => {
+        headerRow.getCell(index + 1).value = formatHeaderLabel(key);
+        headerRow.getCell(index + 1).font = { bold: true };
+      });
+
+      data.forEach((row) => {
+        if (!row || typeof row !== 'object' || Array.isArray(row)) return;
+        const bodyRow = ws.getRow(rowNum++);
+        keys.forEach((key, index) => {
+          bodyRow.getCell(index + 1).value = row[key] ?? '';
+        });
+      });
+
+      ws.columns = keys.map((key) => ({ key, width: Math.max(formatHeaderLabel(key).length + 4, 14) }));
+    }
+
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -93,7 +143,7 @@ export const exportToExcel = async (reportName, data) => {
     a.click();
     URL.revokeObjectURL(url);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -109,40 +159,38 @@ export const exportToCSV = (reportName, data) => {
 
     const firstRow = data[0];
     if (!firstRow || typeof firstRow !== 'object' || Array.isArray(firstRow)) return false;
-    
-    // Get headers
+
     const headers = Object.keys(firstRow);
-    
-    // Create CSV content
+
     const csvContent = [
-      headers.join(','), // Header row
-      ...data.map(row => 
-        headers.map(header => {
-          const value = row[header];
-          // Escape values that contain commas or quotes
-          if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-            return `"${value.replace(/"/g, '""')}"`;
-          }
-          return value;
-        }).join(',')
-      )
+      headers.join(','),
+      ...data.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header];
+            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+              return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+          })
+          .join(',')
+      ),
     ].join('\n');
-    
-    // Create blob and download
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    
+
     link.setAttribute('href', url);
     link.setAttribute('download', `${reportName.replace(/\s+/g, '_')}_${Date.now()}.csv`);
     link.style.visibility = 'hidden';
-    
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

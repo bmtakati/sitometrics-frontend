@@ -1,67 +1,32 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiFileText, FiBarChart2, FiPieChart, FiTrendingUp, FiUsers, FiEye, FiGrid } from 'react-icons/fi';
+import { FiFileText, FiDollarSign, FiTruck, FiEye } from 'react-icons/fi';
 import useDarkMode from '../../hooks/useDarkMode';
 
 const ReportsList = () => {
   const darkMode = useDarkMode();
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Sample reports data - this would come from your API
   const reports = [
     {
-      id: 1,
-      name: 'School Assessment Summary Report',
-      description: 'Comprehensive overview of all school assessments and their outcomes',
-      icon: FiFileText,
-      color: 'from-blue-500 to-blue-600',
-      category: 'Assessments',
-      lastUpdated: '2024-03-15'
+      id: 'sales',
+      name: 'Sales Report',
+      description: 'Closed order sales by outlet and date range with payment breakdown and top items',
+      icon: FiDollarSign,
+      color: 'from-emerald-500 to-green-600',
+      category: 'Finance',
+      lastUpdated: new Date().toISOString().slice(0, 10),
+      path: '/reports/sales',
     },
     {
-      id: 2,
-      name: 'SSE Performance Report',
-      description: 'School Self Evaluation performance metrics and trends',
-      icon: FiBarChart2,
-      color: 'from-green-500 to-green-600',
-      category: 'Performance',
-      lastUpdated: '2024-03-14'
-    },
-    {
-      id: 3,
-      name: 'School Visits Statistics',
-      description: 'Statistical analysis of school visits including WSV and FSV',
-      icon: FiPieChart,
-      color: 'from-purple-500 to-purple-600',
-      category: 'Statistics',
-      lastUpdated: '2024-03-13'
-    },
-    {
-      id: 4,
-      name: 'Actionable Recommendations Report',
-      description: 'Detailed list of recommendations and implementation status',
-      icon: FiTrendingUp,
-      color: 'from-orange-500 to-orange-600',
-      category: 'Recommendations',
-      lastUpdated: '2024-03-12'
-    },
-    {
-      id: 5,
-      name: 'Assessment Team Performance',
-      description: 'Performance metrics and statistics of assessment teams',
-      icon: FiUsers,
-      color: 'from-cyan-500 to-cyan-600',
-      category: 'Teams',
-      lastUpdated: '2024-03-11'
-    },
-    {
-      id: 6,
-      name: 'School Distribution Report',
-      description: 'Geographic distribution and categorization of schools',
-      icon: FiGrid,
-      color: 'from-pink-500 to-pink-600',
-      category: 'Distribution',
-      lastUpdated: '2024-03-10'
+      id: 'suppliers',
+      name: 'Suppliers Report',
+      description: 'Supplier directory with agreed items and local purchase order activity by date range',
+      icon: FiTruck,
+      color: 'from-blue-500 to-indigo-600',
+      category: 'Procurement',
+      lastUpdated: new Date().toISOString().slice(0, 10),
+      path: '/reports/suppliers',
     },
   ];
 
@@ -74,13 +39,11 @@ const ReportsList = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <div>
         <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Reports</h1>
         <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>View and export system reports</p>
       </div>
 
-      {/* Search Bar */}
       <div className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-stone-100 border-stone-300'} rounded-xl shadow-md border p-6`}>
         <div className="flex items-center gap-4">
           <div className="flex-1">
@@ -99,7 +62,6 @@ const ReportsList = () => {
         </div>
       </div>
 
-      {/* Reports Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredReports.length === 0 ? (
           <div className="col-span-full text-center py-12">
@@ -111,10 +73,9 @@ const ReportsList = () => {
           filteredReports.map((report) => (
             <Link
               key={report.id}
-              to={`/reports/view/${report.id}`}
+              to={report.path}
               className={`group ${darkMode ? 'bg-gray-900 border-gray-700 hover:border-blue-500' : 'bg-stone-100 border-stone-300 hover:border-blue-300'} rounded-xl shadow-md border hover:shadow-xl transition-all duration-300 overflow-hidden`}
             >
-              {/* Card Header with Gradient */}
               <div className={`bg-gradient-to-r ${report.color} p-6 text-white`}>
                 <div className="flex items-center justify-between">
                   <report.icon className="w-10 h-10" />
@@ -124,7 +85,6 @@ const ReportsList = () => {
                 </div>
               </div>
 
-              {/* Card Body */}
               <div className="p-6">
                 <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2 group-hover:text-blue-600 transition-colors`}>
                   {report.name}
@@ -132,8 +92,7 @@ const ReportsList = () => {
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-4 line-clamp-2`}>
                   {report.description}
                 </p>
-                
-                {/* Footer */}
+
                 <div className={`flex items-center justify-between pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                   <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     Updated: {new Date(report.lastUpdated).toLocaleDateString()}
@@ -149,7 +108,6 @@ const ReportsList = () => {
         )}
       </div>
 
-      {/* Stats Summary */}
       <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200'} rounded-xl border p-6`}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
@@ -158,7 +116,7 @@ const ReportsList = () => {
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-green-600">
-              {new Set(reports.map(r => r.category)).size}
+              {new Set(reports.map((r) => r.category)).size}
             </div>
             <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>Categories</div>
           </div>

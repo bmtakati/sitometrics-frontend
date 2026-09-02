@@ -79,7 +79,7 @@ const SupplierContractField = ({ formData, onInputChange, errors = {}, darkMode 
           <iframe
             title={displayName || 'Supplier contract preview'}
             src={previewUrl}
-            className="h-[min(420px,60vh)] w-full bg-white"
+            className="h-[min(420px,60vh)] w-full bg-white dark:bg-gray-950"
           />
         </div>
       ) : null}

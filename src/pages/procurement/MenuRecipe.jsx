@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FiList, FiTrendingUp, FiInfo, FiGrid, FiFileText } from 'react-icons/fi';
-import Swal from 'sweetalert2';
+import { showQuickError } from '../../utils/dialogUtils';
 import useApiCrud from '../../hooks/useApiCrud';
 import CRUDPage from '../../components/CRUDPage/CRUDPage';
 import SearchableSelect from '../../components/SearchableSelect';
@@ -267,11 +267,7 @@ const MenuRecipe = () => {
     try {
       await downloadMenuPdf(menuId, row.menu?.name || row.menu_id);
     } catch (error) {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Export failed',
-        text: error?.message || 'Could not generate the menu PDF. Please try again.',
-      });
+      showQuickError('Export failed', error?.message || 'Could not generate the menu PDF. Please try again.');
     } finally {
       setExportingId(null);
     }
@@ -388,6 +384,7 @@ const MenuRecipe = () => {
           {
             name: 'categories',
             type: 'custom',
+            fullWidth: true,
             render: (formData, onInputChange, errors, darkMode) => (
               <MenuCategoriesEditor
                 value={formData.categories}

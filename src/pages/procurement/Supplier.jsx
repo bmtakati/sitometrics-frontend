@@ -207,8 +207,8 @@ const Supplier = () => {
     { name: 'email', label: 'Email', type: 'email', required: false },
     { name: 'tin', label: 'TIN', type: 'text', required: false },
     { name: 'vrn', label: 'VRN', type: 'text', required: false },
-    { name: 'address', label: 'Address', type: 'textarea', rows: 3, required: false },
     { name: 'status_id', label: 'Status', type: 'status_id', required: true },
+    { name: 'address', label: 'Address', type: 'textarea', rows: 3, required: false },
   ];
 
   const formTabs = [
@@ -226,6 +226,7 @@ const Supplier = () => {
         {
           name: 'contract',
           type: 'custom',
+          fullWidth: true,
           render: (formData, onInputChange, errors, darkMode) => (
             <SupplierContractField
               formData={formData}
@@ -246,6 +247,7 @@ const Supplier = () => {
         {
           name: 'supplier_items',
           type: 'custom',
+          fullWidth: true,
           render: (formData, onInputChange, errors, darkMode) => (
             <SupplierItemsEditor
               value={formData.supplier_items}

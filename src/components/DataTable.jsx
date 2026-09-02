@@ -11,7 +11,7 @@ import {
   FiEye,
 } from 'react-icons/fi';
 import ActionMenu from './ActionMenu/ActionMenu';
-import { formatDate, formatDateTime } from '../utils/formatDate';
+import { formatDate, formatDateTime, formatCellDateValue } from '../utils/formatDate';
 
 /**
  * Reusable DataTable Component
@@ -72,6 +72,20 @@ const DataTable = ({
   const tableShell = darkMode
     ? 'border-stone-700/80 bg-stone-900/70 shadow-lg shadow-black/10'
     : 'border-stone-200/90 bg-white shadow-sm';
+
+  const normalizeSize = (value) => {
+    if (value === null || value === undefined || value === '') return undefined;
+    return typeof value === 'number' ? `${value}px` : value;
+  };
+
+  const getColumnStyle = (column) => {
+    const width = normalizeSize(column.width);
+    const minWidth = normalizeSize(column.minWidth) || width || (column.noWrap ? '120px' : '150px');
+    return {
+      ...(width ? { width } : {}),
+      minWidth,
+    };
+  };
 
   const {
     icon: EmptyIcon,
@@ -136,18 +150,19 @@ const DataTable = ({
       );
     }
 
-    if (column.type === 'date') {
+    if (column.type === 'date' || column.type === 'datetime') {
       return (
         <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          {formatDate(value)}
+          {formatCellDateValue(value, { accessor: column.accessor, type: column.type })}
         </div>
       );
     }
 
-    if (column.type === 'datetime') {
+    const autoFormattedDate = formatCellDateValue(value, { accessor: column.accessor, type: column.type });
+    if (autoFormattedDate !== null) {
       return (
         <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          {formatDateTime(value)}
+          {autoFormattedDate}
         </div>
       );
     }
@@ -204,7 +219,7 @@ const DataTable = ({
   if (data.length === 0) {
     return (
       <div className={`overflow-hidden rounded-b-2xl border border-t-0 ${tableShell}`}>
-        <div className="py-12 text-center">
+        <div className="px-4 py-10 text-center sm:py-12">
           {EmptyIcon && <EmptyIcon className={`mx-auto mb-4 h-16 w-16 ${darkMode ? 'text-stone-600' : 'text-stone-300'}`} />}
           <h3 className={`mb-2 text-lg font-medium ${darkMode ? 'text-stone-50' : 'text-stone-900'}`}>{title}</h3>
           <p className={`mb-4 ${darkMode ? 'text-stone-400' : 'text-stone-500'}`}>{description}</p>
@@ -232,8 +247,8 @@ const DataTable = ({
   return (
       <div className={`relative z-10 rounded-b-2xl border border-t-0 ${tableShell}`}>
 
-      <div className="overflow-x-auto">
-        <table className="relative w-full">
+      <div className="overflow-x-auto overscroll-x-contain">
+        <table className="relative w-full min-w-[760px] table-auto lg:min-w-full">
           <thead className={`border-b ${
             darkMode
               ? 'border-stone-700 bg-stone-800/80'
@@ -241,9 +256,9 @@ const DataTable = ({
           }`}>
             <tr>
               {/* S.No. Column */}
-              <th className={`px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider ${
+              <th className={`whitespace-nowrap px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider sm:px-4 lg:px-6 lg:py-3.5 ${
                 darkMode ? 'text-stone-300' : 'text-stone-600'
-              }`} style={{ width: '80px' }}>
+              }`} style={{ width: '72px', minWidth: '72px' }}>
                 S.No.
               </th>
               {columns.map((column, idx) => {
@@ -253,15 +268,15 @@ const DataTable = ({
                   <th
                     key={idx}
                     onClick={isSortable ? () => handleSort(column) : undefined}
-                    className={`px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider ${
+                    className={`whitespace-nowrap px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider sm:px-4 lg:px-6 lg:py-3.5 ${
                       darkMode ? 'text-stone-300' : 'text-stone-600'
                     } ${
                       isSortable ? 'cursor-pointer select-none hover:bg-emerald-500/5' : ''
                     } ${column.className || ''}`}
-                    style={column.width ? { width: column.width } : {}}
+                    style={getColumnStyle(column)}
                   >
-                    <span className="inline-flex items-center gap-1">
-                      {column.header}
+                    <span className="inline-flex min-w-0 items-center gap-1 whitespace-nowrap">
+                      <span className="whitespace-nowrap">{column.header}</span>
                       {isSortable && (
                         isActive
                           ? sortDir === 'asc'
@@ -274,9 +289,9 @@ const DataTable = ({
                 );
               })}
               {actions.length > 0 && (
-                <th className={`px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider ${
+                <th className={`whitespace-nowrap px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider sm:px-4 lg:px-6 lg:py-3.5 ${
                   darkMode ? 'text-stone-300' : 'text-stone-600'
-                }`}>
+                }`} style={{ width: '96px', minWidth: '96px' }}>
                   Actions
                 </th>
               )}
@@ -297,21 +312,22 @@ const DataTable = ({
                   }`}
                 >
                   {/* S.No. Cell */}
-                  <td className="whitespace-nowrap px-6 py-3.5">
+                  <td className="whitespace-nowrap px-3 py-3 sm:px-4 lg:px-6 lg:py-3.5">
                     <div className={`text-sm tabular-nums ${darkMode ? 'text-stone-400' : 'text-stone-500'}`}>{serialNumber}</div>
                   </td>
                   {columns.map((column, colIdx) => (
                     <td
                       key={colIdx}
-                      className={`px-6 py-3.5 ${column.noWrap ? 'whitespace-nowrap' : ''} ${
+                      className={`px-3 py-3 sm:px-4 lg:px-6 lg:py-3.5 ${column.noWrap ? 'whitespace-nowrap' : ''} ${
                         column.cellClassName || ''
                       }`}
+                      style={getColumnStyle(column)}
                     >
                       {renderCellValue(row, column)}
                     </td>
                     ))}
                   {actions.length > 0 && (
-                    <td className="relative z-10 whitespace-nowrap px-6 py-3.5 text-sm">
+                    <td className="relative z-10 whitespace-nowrap px-3 py-3 text-sm sm:px-4 lg:px-6 lg:py-3.5">
                       {renderActions(row)}
                     </td>
                   )}
@@ -324,8 +340,8 @@ const DataTable = ({
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 0 && (
-        <div className={`border-t px-6 py-3.5 ${darkMode ? 'border-stone-700 bg-stone-900/50' : 'border-stone-200 bg-stone-50/50'}`}>
-          <div className="flex items-center justify-between">
+        <div className={`border-t px-3 py-3 sm:px-4 lg:px-6 lg:py-3.5 ${darkMode ? 'border-stone-700 bg-stone-900/50' : 'border-stone-200 bg-stone-50/50'}`}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className={`text-sm ${darkMode ? 'text-stone-400' : 'text-stone-600'}`}>
               {pagination.totalItems > 0 ? (
                 <>
@@ -335,7 +351,7 @@ const DataTable = ({
                 'No entries'
               )}
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => pagination.onPageChange(1)}
                 disabled={pagination.currentPage === 1}

@@ -1,5 +1,47 @@
 const EMPTY = '—';
 
+const getAccessorKey = (accessor) => {
+  if (!accessor || typeof accessor !== 'string') return '';
+  return accessor.split('.').pop().toLowerCase();
+};
+
+/**
+ * True when the column key represents a datetime (e.g. created_at, closed_at).
+ */
+export const isDateTimeAccessor = (accessor) => {
+  const key = getAccessorKey(accessor);
+  if (!key) return false;
+  return key.endsWith('_at') || key.endsWith('_time') || key.includes('timestamp');
+};
+
+/**
+ * True when the column key represents a calendar date or datetime field.
+ */
+export const isDateAccessor = (accessor) => {
+  const key = getAccessorKey(accessor);
+  if (!key) return false;
+  if (isDateTimeAccessor(accessor)) return true;
+  return key.includes('date');
+};
+
+/**
+ * Format a table cell value when the column is (or looks like) a date field.
+ * Returns null when the value should use default rendering.
+ */
+export const formatCellDateValue = (value, { accessor, type } = {}) => {
+  if (value == null || value === '') return EMPTY;
+
+  const explicit = type === 'date' || type === 'datetime';
+  const inferred = !type && accessor && isDateAccessor(accessor);
+  if (!explicit && !inferred) return null;
+
+  const useDateTime =
+    type === 'datetime' ||
+    (type !== 'date' && isDateTimeAccessor(accessor));
+
+  return useDateTime ? formatDateTime(value) : formatDate(value);
+};
+
 /**
  * Parse API or form date values into a local Date.
  * YYYY-MM-DD strings are parsed as local calendar dates (no UTC day shift).
@@ -38,6 +80,32 @@ export const formatDate = (value, options = {}) => {
     day: 'numeric',
     ...options,
   });
+};
+
+/**
+ * Numeric calendar date for reports, e.g. "25/07/2026".
+ */
+export const formatReportDate = (value) => {
+  const date = parseDate(value);
+  if (!date) return EMPTY;
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+
+  return `${day}/${month}/${date.getFullYear()}`;
+};
+
+/**
+ * Numeric date and time for reports, e.g. "25/07/2026 17:44".
+ */
+export const formatReportDateTime = (value) => {
+  const date = parseDate(value);
+  if (!date) return EMPTY;
+
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${formatReportDate(date)} ${hours}:${minutes}`;
 };
 
 /**

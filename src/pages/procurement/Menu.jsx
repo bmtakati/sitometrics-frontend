@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FiCoffee, FiTrendingUp, FiAlertCircle, FiTrash2, FiCheck, FiInfo, FiGrid, FiFileText } from 'react-icons/fi';
-import Swal from 'sweetalert2';
+import { showQuickError } from '../../utils/dialogUtils';
 import useApiCrud from '../../hooks/useApiCrud';
 import CRUDPage from '../../components/CRUDPage/CRUDPage';
 import MenuRecipePreview from '../../components/MenuRecipePreview';
@@ -142,11 +142,7 @@ const Menu = () => {
     try {
       await downloadMenuPdf(row.id, row.name);
     } catch (error) {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Export failed',
-        text: error?.message || 'Could not generate the menu PDF. Please try again.',
-      });
+      showQuickError('Export failed', error?.message || 'Could not generate the menu PDF. Please try again.');
     } finally {
       setExportingId(null);
     }
@@ -245,6 +241,7 @@ const Menu = () => {
           {
             name: 'menu_content_preview',
             type: 'custom',
+            fullWidth: true,
             render: (formData) => (
               <div className="space-y-3">
                 <p className="text-sm text-gray-500 dark:text-gray-400">

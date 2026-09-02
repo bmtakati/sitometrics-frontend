@@ -26,18 +26,6 @@ const EVENT_COLORS = {
   reset: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300' },
 };
 
-const formatDate = (value) => {
-  if (!value) return 'N/A';
-
-  return new Date(value).toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
 const getDisplayName = (user) => {
   if (!user) return 'Unknown User';
 
@@ -143,12 +131,8 @@ const PasswordHistory = () => {
     {
       header: 'Changed At',
       accessor: 'changed_at',
+      type: 'datetime',
       noWrap: true,
-      render: (entry, tableDarkMode) => (
-        <div className={`text-sm ${tableDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          {formatDate(entry.changed_at)}
-        </div>
-      )
     },
     {
       header: 'Changed By',

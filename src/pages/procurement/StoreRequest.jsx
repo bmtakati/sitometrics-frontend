@@ -112,10 +112,10 @@ const StoreRequest = () => {
     { name: 'source_store_id', label: 'Source Store ID', type: 'number', required: true },
     { name: 'destination_store_id', label: 'Destination Store ID', type: 'number', required: true },
     { name: 'request_date', label: 'Request Date', type: 'date', required: true },
+    { name: 'status_id', label: 'Status', type: 'status_id', required: true },
     { name: 'workflow_status', label: 'Workflow Status', type: 'select', required: true, options: WORKFLOW_OPTIONS },
     { name: 'remarks', label: 'Remarks', type: 'textarea', rows: 3, required: false },
     { name: 'items_json', label: 'Items (JSON)', type: 'textarea', rows: 10, required: true },
-    { name: 'status_id', label: 'Status', type: 'status_id', required: true },
   ];
 
   return (

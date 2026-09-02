@@ -17,27 +17,27 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-          <div className="max-w-2xl w-full bg-white rounded-xl shadow-lg p-8">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 dark:bg-gray-950">
+          <div className="max-w-2xl w-full bg-white rounded-xl shadow-lg p-8 dark:border dark:border-gray-700 dark:bg-gray-900">
             <div className="text-center">
               <div className="text-6xl mb-4">⚠️</div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              <h1 className="text-2xl font-bold text-gray-900 mb-4 dark:text-white">
                 Oops! Something went wrong
               </h1>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 mb-6 dark:text-gray-300">
                 The application encountered an unexpected error. Please try refreshing the page.
               </p>
               {this.state.error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-left">
-                  <p className="font-mono text-sm text-red-800">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-left dark:border-red-900/60 dark:bg-red-950/30">
+                  <p className="font-mono text-sm text-red-800 dark:text-red-200">
                     {this.state.error.toString()}
                   </p>
                   {this.state.errorInfo && (
                     <details className="mt-4">
-                      <summary className="cursor-pointer text-red-700 font-medium">
+                      <summary className="cursor-pointer text-red-700 font-medium dark:text-red-300">
                         Stack Trace
                       </summary>
-                      <pre className="mt-2 text-xs overflow-auto max-h-64 text-red-700">
+                      <pre className="mt-2 text-xs overflow-auto max-h-64 text-red-700 dark:text-red-300">
                         {this.state.errorInfo.componentStack}
                       </pre>
                     </details>

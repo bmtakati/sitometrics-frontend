@@ -114,12 +114,12 @@ const TableControls = ({
 
   return (
     <div className={`relative z-30 overflow-visible rounded-t-2xl border border-b-0 ${shellClass}`}>
-      <div className="space-y-2 px-6 py-4">
+      <div className="space-y-3 px-3 py-3 sm:px-4 lg:px-6 lg:py-4">
 
         {/* Row 1: Entries per page + Search + Filter + Clear */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {/* Left: Entries Per Page */}
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             {pagination && pagination.itemsPerPage && pagination.onItemsPerPageChange && (
               <>
                 <label className={`text-sm ${darkMode ? 'text-stone-400' : 'text-stone-600'}`}>
@@ -142,10 +142,10 @@ const TableControls = ({
           </div>
 
           {/* Right: Search + Status Filter + Clear */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:w-auto lg:flex-wrap lg:items-center">
             {/* Search */}
             {search && (
-              <div className="relative">
+              <div className="relative min-w-0 sm:col-span-2 lg:col-span-1">
                 <FiSearch className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${
                   darkMode ? 'text-stone-500' : 'text-stone-400'
                 }`} />
@@ -155,14 +155,14 @@ const TableControls = ({
                   placeholder={search.placeholder || 'Search...'}
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  className={`h-[38px] w-64 rounded-lg border py-1.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 ${inputClass}`}
+                  className={`h-[38px] w-full rounded-lg border py-1.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 lg:w-64 ${inputClass}`}
                 />
               </div>
             )}
 
             {/* Status filter */}
             {filter && filter.options && (
-              <div className="relative z-30 w-48">
+              <div className="relative z-30 min-w-0 lg:w-48">
                 <SearchableSelect
                   options={filter.options}
                   value={filter.value}
@@ -196,7 +196,7 @@ const TableControls = ({
                 <button
                   onClick={addButton.onClick}
                   disabled={addButton.disabled}
-                  className={`flex items-center gap-2 rounded-lg border px-4 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                     darkMode
                       ? 'border-emerald-700/60 text-emerald-400 hover:border-emerald-600 hover:bg-emerald-600 hover:text-white'
                       : 'border-emerald-600 text-emerald-700 hover:border-emerald-600 hover:bg-emerald-600 hover:text-white'
@@ -212,10 +212,10 @@ const TableControls = ({
 
         {/* Row 2: Extra filters / Email filter (only when present) */}
         {(extraFilters?.length > 0 || emailFilter) && (
-          <div className="flex flex-nowrap items-center gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-end">
             {/* Extra Filters (geo dropdowns etc.) */}
             {extraFilters && extraFilters.map((ef, idx) => (
-              <div key={idx} className="relative z-30 w-52 shrink-0">
+              <div key={idx} className="relative z-30 min-w-0 lg:w-52 lg:shrink-0">
                 {ef.label && (
                   <label className={`mb-1 block text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-stone-500'}`}>
                     {ef.label}
@@ -233,19 +233,19 @@ const TableControls = ({
 
             {/* Email Filter */}
             {emailFilter && (
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="grid grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] lg:flex lg:items-center lg:flex-wrap">
                 <input
                   type="email"
                   placeholder={emailFilter.placeholder || 'Filter by email...'}
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
-                  className={`w-56 rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 ${inputClass}`}
+                  className={`w-full rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 lg:w-56 ${inputClass}`}
                 />
                 <button
                   type="button"
                   onClick={() => emailFilter.onFilter && emailFilter.onFilter(emailInput)}
                   disabled={!hasEmailValue}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
+                  className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
                     !hasEmailValue
                       ? 'opacity-50 cursor-not-allowed bg-gray-100 border-gray-300'
                       : darkMode
@@ -264,7 +264,7 @@ const TableControls = ({
                       setEmailInput('');
                       emailFilter.onClear && emailFilter.onClear();
                     }}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
+                    className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
                       darkMode
                         ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
                         : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'

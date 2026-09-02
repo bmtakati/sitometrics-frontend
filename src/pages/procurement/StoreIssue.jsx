@@ -108,14 +108,14 @@ const StoreIssue = () => {
   ];
 
   const formFields = [
-    { name: 'store_request_id', label: 'Store Request ID', type: 'number', required: false },
     { name: 'source_store_id', label: 'Source Store ID', type: 'number', required: true },
     { name: 'destination_store_id', label: 'Destination Store ID', type: 'number', required: true },
     { name: 'issue_date', label: 'Issue Date', type: 'date', required: true },
+    { name: 'status_id', label: 'Status', type: 'status_id', required: true },
+    { name: 'store_request_id', label: 'Store Request ID', type: 'number', required: false },
     { name: 'workflow_status', label: 'Workflow Status', type: 'select', required: true, options: WORKFLOW_OPTIONS },
     { name: 'remarks', label: 'Remarks', type: 'textarea', rows: 3, required: false },
     { name: 'items_json', label: 'Items (JSON)', type: 'textarea', rows: 10, required: true },
-    { name: 'status_id', label: 'Status', type: 'status_id', required: true },
   ];
 
   return (

@@ -86,11 +86,11 @@ const Currency = () => {
 
   const formFields = [
     { name: 'code', label: 'Code', type: 'text', required: true, autoFocus: true, placeholder: 'e.g. TZS' },
-    { name: 'name', label: 'Name', type: 'text', required: true, placeholder: 'e.g. Tanzanian Shilling' },
     { name: 'symbol', label: 'Symbol', type: 'text', required: true, placeholder: 'e.g. TSh' },
+    { name: 'name', label: 'Name', type: 'text', required: true, placeholder: 'e.g. Tanzanian Shilling' },
     { name: 'decimal_places', label: 'Decimal Places', type: 'number', required: true, min: 0, max: 4, step: 1 },
+    { name: 'status_id', label: 'Status', type: 'status_id', required: true },
     { name: 'is_base', label: 'Base Currency', type: 'checkbox' },
-    { name: 'status_id', label: 'Status', type: 'status_id', required: true }
   ];
 
   return (

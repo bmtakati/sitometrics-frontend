@@ -392,6 +392,7 @@ const UserFormTabs = ({ formData, onInputChange, errors, isEditing, editingId, d
           value={formData.role_ids || []}
           onChange={(ids) => onInputChange({ target: { name: 'role_ids', value: ids } })}
           errors={errors}
+          darkMode={darkMode}
         />
       )}
 
@@ -756,6 +757,7 @@ const UserList = () => {
     {
       name: '_tabs',
       type: 'custom',
+      fullWidth: true,
       render: (formData, onInputChange, errors, darkMode) => (
         <UserFormTabs
           formData={formData}

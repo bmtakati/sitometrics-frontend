@@ -5,11 +5,12 @@ import { shouldFieldSpanFullWidth } from '../../utils/formFieldLayout';
  * Reusable 2-column field layout for forms.
  * - Desktop: 2 columns
  * - Mobile: 1 column
- * - Description stays beside name; textarea/custom/file/checkbox span both columns unless overridden.
+ * - Description stays beside name; textarea/file/checkbox span both columns unless overridden.
+ * - Custom fields default to one column; set fullWidth: true for editors and wide controls.
  */
 const TwoColumnFieldsGrid = ({ fields = [], renderField }) => {
   return (
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
       {fields.map((field) => {
         const spanClass = shouldFieldSpanFullWidth(field) ? 'md:col-span-2' : 'md:col-span-1';
         return (

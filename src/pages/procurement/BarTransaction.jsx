@@ -107,10 +107,10 @@ const BarTransaction = () => {
     { name: 'transaction_type', label: 'Transaction Type', type: 'select', required: true, options: TYPE_OPTIONS },
     { name: 'store_id', label: 'Store ID', type: 'number', required: true },
     { name: 'transaction_date', label: 'Transaction Date', type: 'date', required: true },
+    { name: 'status_id', label: 'Status', type: 'status_id', required: true },
     { name: 'workflow_status', label: 'Workflow Status', type: 'select', required: true, options: WORKFLOW_OPTIONS },
     { name: 'remarks', label: 'Remarks', type: 'textarea', rows: 3, required: false },
     { name: 'items_json', label: 'Items (JSON)', type: 'textarea', rows: 10, required: true },
-    { name: 'status_id', label: 'Status', type: 'status_id', required: true },
   ];
 
   return (

@@ -9,9 +9,9 @@ import { shouldFieldSpanFullWidth } from '../../utils/formFieldLayout';
  */
 const ThreeColumnFieldsGrid = ({ fields = [], renderField }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {fields.map((field) => {
-        const spanClass = shouldFieldSpanFullWidth(field) ? 'md:col-span-3' : 'md:col-span-1';
+        const spanClass = shouldFieldSpanFullWidth(field) ? 'md:col-span-2 xl:col-span-3' : 'md:col-span-1';
         return (
           <div key={field?.name || labelFallback(field)} className={spanClass}>
             {renderField(field)}
@@ -28,4 +28,3 @@ const labelFallback = (field) => {
 };
 
 export default ThreeColumnFieldsGrid;
-

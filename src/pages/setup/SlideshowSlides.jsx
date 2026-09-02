@@ -125,13 +125,6 @@ const SlideshowSlides = () => {
       autoFocus: true,
     },
     {
-      name: 'description',
-      label: 'Description',
-      type: 'textarea',
-      rows: 3,
-      required: false,
-    },
-    {
       name: 'sort_order',
       label: 'Sort order',
       type: 'number',
@@ -148,18 +141,25 @@ const SlideshowSlides = () => {
       helpText: 'CSS gradient classes applied over the slide image for text readability.',
     },
     {
+      name: 'status_id',
+      label: 'Status',
+      type: 'status_id',
+      required: true,
+    },
+    {
+      name: 'description',
+      label: 'Description',
+      type: 'textarea',
+      rows: 3,
+      required: false,
+    },
+    {
       name: 'image',
       label: 'Slide image',
       type: 'file',
       required: false,
       accept: 'image/png,image/jpeg,image/gif,image/webp',
       helpText: 'JPG, PNG, GIF, or WebP (max 5MB). Recommended 1920×1080. Leave empty when editing to keep the current image.',
-    },
-    {
-      name: 'status_id',
-      label: 'Status',
-      type: 'status_id',
-      required: true,
     },
   ];
 

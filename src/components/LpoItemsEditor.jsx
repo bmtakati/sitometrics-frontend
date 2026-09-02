@@ -10,10 +10,14 @@ const LpoItemsEditor = ({
   itemOptions = [],
   priceByItemId = {},
   supplierSelected = false,
+  lockedFromRequisition = false,
   errors = {},
   darkMode = false,
 }) => {
   const lines = Array.isArray(value) && value.length ? value : [emptyLine()];
+  const visibleLines = lockedFromRequisition
+    ? lines.filter((line) => line.item_id)
+    : lines;
 
   const updateLine = (index, patch) => {
     const next = lines.map((line, i) => (i === index ? { ...line, ...patch } : line));
@@ -75,24 +79,49 @@ const LpoItemsEditor = ({
         <div>
           <p className={`text-sm font-medium ${labelClass}`}>Order lines</p>
           <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-            Items and unit prices come from the selected supplier&apos;s contract.
+            {lockedFromRequisition
+              ? 'Quantities and items are fixed from the approved purchase requisition.'
+              : 'Items and unit prices come from the selected supplier\'s contract.'}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={addLine}
-          className="inline-flex items-center gap-1 rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 dark:border-emerald-500 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
-        >
-          <FiPlus className="h-3.5 w-3.5" />
-          Add line
-        </button>
+        {!lockedFromRequisition ? (
+          <button
+            type="button"
+            onClick={addLine}
+            className="inline-flex items-center gap-1 rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 dark:border-emerald-500 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
+          >
+            <FiPlus className="h-3.5 w-3.5" />
+            Add line
+          </button>
+        ) : null}
       </div>
+
+      {lockedFromRequisition ? (
+        <div
+          className={`rounded-lg border px-3 py-2 text-xs ${
+            darkMode
+              ? 'border-indigo-800/60 bg-indigo-950/30 text-indigo-200'
+              : 'border-indigo-200 bg-indigo-50 text-indigo-800'
+          }`}
+        >
+          Linked to an approved purchase requisition — line items cannot be changed on this order.
+        </div>
+      ) : null}
 
       {errors.lpo_items ? <p className="text-xs text-red-500">{errors.lpo_items}</p> : null}
 
+      {lockedFromRequisition && !visibleLines.length ? (
+        <div className={`rounded-xl border border-dashed px-4 py-6 text-center text-sm ${borderClass} ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          No requisition lines match this supplier&apos;s agreed prices. Choose another supplier or clear the purchase requisition.
+        </div>
+      ) : (
       <div className={`overflow-x-auto rounded-xl border ${borderClass}`}>
         <div
-          className={`grid min-w-[640px] grid-cols-[1fr_100px_120px_120px_40px] gap-2 border-b px-3 py-2 text-xs font-semibold uppercase tracking-wide ${
+          className={`grid min-w-[640px] ${
+            lockedFromRequisition
+              ? 'grid-cols-[1fr_100px_120px_120px]'
+              : 'grid-cols-[1fr_100px_120px_120px_40px]'
+          } gap-2 border-b px-3 py-2 text-xs font-semibold uppercase tracking-wide ${
             darkMode ? 'border-gray-600 bg-gray-800/60 text-gray-400' : 'border-gray-200 bg-gray-50 text-gray-500'
           }`}
         >
@@ -100,12 +129,16 @@ const LpoItemsEditor = ({
           <span>Qty</span>
           <span>Unit price</span>
           <span>Line total</span>
-          <span />
+          {!lockedFromRequisition ? <span /> : null}
         </div>
-        {lines.map((line, index) => (
+        {(lockedFromRequisition ? visibleLines : lines).map((line, index) => (
           <div
             key={`lpo-item-${index}`}
-            className={`grid min-w-[640px] grid-cols-[1fr_100px_120px_120px_40px] gap-2 border-b px-3 py-2 last:border-b-0 ${
+            className={`grid min-w-[640px] ${
+              lockedFromRequisition
+                ? 'grid-cols-[1fr_100px_120px_120px]'
+                : 'grid-cols-[1fr_100px_120px_120px_40px]'
+            } gap-2 border-b px-3 py-2 last:border-b-0 ${
               darkMode ? 'border-gray-700' : 'border-gray-100'
             }`}
           >
@@ -116,6 +149,7 @@ const LpoItemsEditor = ({
               placeholder="Select item…"
               darkMode={darkMode}
               size="compact"
+              disabled={lockedFromRequisition}
             />
             <input
               type="number"
@@ -124,7 +158,8 @@ const LpoItemsEditor = ({
               value={line.quantity ?? ''}
               onChange={(e) => updateLine(index, { quantity: e.target.value })}
               placeholder="0"
-              className={inputClass}
+              readOnly={lockedFromRequisition}
+              className={lockedFromRequisition ? readOnlyClass : inputClass}
             />
             <input
               type="text"
@@ -136,18 +171,21 @@ const LpoItemsEditor = ({
             <div className={`flex h-[38px] items-center px-1 text-sm font-medium ${labelClass}`}>
               {lineTotal(line)}
             </div>
-            <button
-              type="button"
-              onClick={() => removeLine(index)}
-              disabled={lines.length === 1}
-              className="flex h-[38px] w-[38px] items-center justify-center rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-40 dark:hover:bg-red-950/30"
-              aria-label="Remove line"
-            >
-              <FiTrash2 className="h-4 w-4" />
-            </button>
+            {!lockedFromRequisition ? (
+              <button
+                type="button"
+                onClick={() => removeLine(index)}
+                disabled={lines.length === 1}
+                className="flex h-[38px] w-[38px] items-center justify-center rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-40 dark:hover:bg-red-950/30"
+                aria-label="Remove line"
+              >
+                <FiTrash2 className="h-4 w-4" />
+              </button>
+            ) : null}
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 };

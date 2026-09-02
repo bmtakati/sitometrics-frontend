@@ -126,7 +126,7 @@ const Header = ({ onMenuClick }) => {
   return (
     <>
     <header className={`sticky top-0 z-30 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-slate-50 border-slate-200'} border-b shadow-sm transition-colors duration-200`}>
-      <div className="w-full px-4 sm:px-5 lg:px-6">
+      <div className="w-full px-2 sm:px-4 lg:px-6">
         <div className="flex items-center h-16 min-w-0 gap-2">
           {onMenuClick && (
             <button
@@ -141,7 +141,7 @@ const Header = ({ onMenuClick }) => {
             </button>
           )}
 
-          <div className="nav-preferences flex items-center gap-0.5 sm:gap-1 shrink-0 ml-auto">
+          <div className="nav-preferences flex min-w-0 items-center gap-0.5 sm:gap-1 shrink-0 ml-auto">
             <NavIconDropdown
               id="header-theme"
               value={themePreference}
@@ -200,7 +200,7 @@ const Header = ({ onMenuClick }) => {
               </button>
 
             {showNotifications && (
-              <div className={`absolute right-0 mt-2 w-80 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-300'} rounded-xl shadow-dropdown border py-2 fade-in`}>
+              <div className={`fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-300'} rounded-xl shadow-dropdown border py-2 fade-in`}>
                 <div className={`px-4 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                   <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Notifications</h3>
                 </div>
@@ -247,7 +247,7 @@ const Header = ({ onMenuClick }) => {
             </button>
 
             {showProfile && (
-              <div className={`absolute right-0 mt-2 w-56 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-300'} rounded-xl shadow-dropdown border py-2 fade-in`}>
+              <div className={`fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-56 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-300'} rounded-xl shadow-dropdown border py-2 fade-in`}>
                 <div className={`px-4 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                   <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{fullName}</p>
                   <p className={`text-xs font-medium mt-0.5 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>{primaryRole} &ndash; {scopeLabel}</p>

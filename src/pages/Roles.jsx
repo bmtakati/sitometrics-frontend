@@ -302,6 +302,7 @@ const Roles = () => {
         {
           name: 'permissions',
           type: 'custom',
+          fullWidth: true,
           render: (formData, onInputChange, errors) => (
             <PermissionPicker
               value={formData.permissions || []}
@@ -322,6 +323,7 @@ const Roles = () => {
         {
           name: 'assignable_role_ids',
           type: 'custom',
+          fullWidth: true,
           render: (formData, onInputChange, errors) => (
             <AssignableRolePicker
               value={formData.assignable_role_ids || []}

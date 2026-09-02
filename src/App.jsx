@@ -22,7 +22,8 @@ import FailedLogins from './pages/logs/FailedLogins';
 
 // Reports Pages
 import ReportsList from './pages/reports/ReportsList';
-import ReportView from './pages/reports/ReportView';
+import SalesReport from './pages/reports/SalesReport';
+import SuppliersReport from './pages/reports/SuppliersReport';
 
 // Notifications Pages
 import AllNotifications from './pages/notifications/AllNotifications';
@@ -53,6 +54,8 @@ import BeverageCategory from './pages/setup/BeverageCategory';
 import Item from './pages/setup/Item';
 import Unit from './pages/setup/Unit';
 import Currency from './pages/setup/Currency';
+import PaymentMethod from './pages/setup/PaymentMethod';
+import OrderType from './pages/setup/OrderType';
 import ExchangeRate from './pages/setup/ExchangeRate';
 import Locale from './pages/setup/Locale';
 import SlideshowSlides from './pages/setup/SlideshowSlides';
@@ -71,6 +74,11 @@ import Menu from './pages/procurement/Menu';
 import MenuRecipe from './pages/procurement/MenuRecipe';
 import ConsumptionPosting from './pages/procurement/ConsumptionPosting';
 import BarTransaction from './pages/procurement/BarTransaction';
+import WaiterOrders from './pages/service/WaiterOrders';
+import KitchenQueue from './pages/service/KitchenQueue';
+import BarQueue from './pages/service/BarQueue';
+import CashierSales from './pages/service/CashierSales';
+import DocumentVerify from './pages/DocumentVerify';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -78,10 +86,10 @@ const ProtectedRoute = ({ children }) => {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -100,10 +108,10 @@ function AppRoutes() {
   // Show loading screen while checking authentication
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -112,15 +120,12 @@ function AppRoutes() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-[50vh] flex items-center justify-center bg-gray-50">
+        <div className="min-h-[50vh] flex items-center justify-center bg-gray-50 dark:bg-gray-950">
           <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
         </div>
       }
     >
     <Routes>
-      <Route path="/landing" element={<LandingPage />} />
-      <Route path="/landing-test" element={<LandingPageTest />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/"
         element={
@@ -144,8 +149,9 @@ function AppRoutes() {
         <Route path="logs/failed-logins" element={<FailedLogins />} />
         
         {/* Reports Routes */}
-        <Route path="reports" element={<ReportsList />} />
-        <Route path="reports/view/:reportId" element={<ReportView />} />
+        <Route path="reports" element={can('view-reports') ? <ReportsList /> : <Navigate to="/" replace />} />
+        <Route path="reports/sales" element={can('view-reports') ? <SalesReport /> : <Navigate to="/" replace />} />
+        <Route path="reports/suppliers" element={can('view-reports') ? <SuppliersReport /> : <Navigate to="/" replace />} />
         
         {/* Notifications Routes */}
         <Route path="notifications/all" element={<AllNotifications />} />
@@ -176,6 +182,8 @@ function AppRoutes() {
         <Route path="setup/item" element={<Item />} />
         <Route path="setup/unit" element={<Unit />} />
         <Route path="setup/currencies" element={<Currency />} />
+        <Route path="setup/payment-methods" element={can('manage-payment-methods') ? <PaymentMethod /> : <Navigate to="/" replace />} />
+        <Route path="setup/order-types" element={can('manage-order-types') ? <OrderType /> : <Navigate to="/" replace />} />
         <Route path="setup/exchange-rates" element={<ExchangeRate />} />
         <Route path="setup/locales" element={<Locale />} />
         <Route path="setup/slideshow-slides" element={<SlideshowSlides />} />
@@ -183,8 +191,14 @@ function AppRoutes() {
         <Route path="setup/outlets" element={<Outlet />} />
         <Route path="procurement/suppliers" element={<Supplier />} />
         <Route path="setup/store" element={<Store />} />
-        <Route path="procurement/purchase-requisitions" element={<PurchaseRequisition />} />
-        <Route path="procurement/local-purchase-orders" element={<LocalPurchaseOrder />} />
+        <Route
+          path="procurement/purchase-requisitions"
+          element={can('view-purchase-requisitions') || can('manage-purchase-requisitions') ? <PurchaseRequisition /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="procurement/local-purchase-orders"
+          element={can('view-local-purchase-orders') || can('manage-local-purchase-orders') ? <LocalPurchaseOrder /> : <Navigate to="/" replace />}
+        />
         <Route path="procurement/goods-received-notes" element={<GoodsReceivedNote />} />
         <Route path="procurement/store-requests" element={<StoreRequest />} />
         <Route path="procurement/store-issues" element={<StoreIssue />} />
@@ -194,6 +208,10 @@ function AppRoutes() {
         <Route path="procurement/menu-recipes" element={<MenuRecipe />} />
         <Route path="procurement/consumptions" element={<ConsumptionPosting />} />
         <Route path="procurement/bar-transactions" element={<BarTransaction />} />
+        <Route path="service/waiter-orders" element={<WaiterOrders />} />
+        <Route path="service/kitchen-queue" element={<KitchenQueue />} />
+        <Route path="service/bar-queue" element={<BarQueue />} />
+        <Route path="service/cashier" element={can('view-cashier-sales') ? <CashierSales /> : <Navigate to="/" replace />} />
       </Route>
     </Routes>
     </Suspense>
@@ -202,9 +220,15 @@ function AppRoutes() {
 
 function App() {
   return (
-    <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+    <Router>
       <AuthProvider>
-        <AppRoutes />
+        <Routes>
+          <Route path="/verify/:code" element={<DocumentVerify />} />
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/landing-test" element={<LandingPageTest />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/*" element={<AppRoutes />} />
+        </Routes>
       </AuthProvider>
     </Router>
   );

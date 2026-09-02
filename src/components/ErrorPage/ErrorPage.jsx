@@ -25,8 +25,8 @@ const ErrorPage = ({
     <div className={containerClass}>
       <div className="text-center max-w-md mx-auto px-4">
         <Icon className="w-16 h-16 text-red-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">{title}</h2>
-        <p className="text-gray-600 mb-6">{message}</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2 dark:text-white">{title}</h2>
+        <p className="text-gray-600 mb-6 dark:text-gray-300">{message}</p>
         {onRetry && (
           <button
             onClick={onRetry}

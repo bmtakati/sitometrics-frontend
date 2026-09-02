@@ -304,7 +304,7 @@ const FaqTroubleshootingAdmin = () => {
       formFields={formFields}
       modalTitle="Troubleshooting Item"
       modalMaxWidth="max-w-5xl"
-      formFieldsLayout="three-col"
+      formFieldsLayout="two-col"
       crud={crud}
       filterOptions={filterOptions}
     />

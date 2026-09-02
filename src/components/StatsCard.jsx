@@ -22,7 +22,7 @@ const StatsCard = ({ label, value, icon: Icon, iconColor, className = '' }) => {
         aria-hidden
       />
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
           <p
             className={`mb-1 text-xs font-medium uppercase tracking-wider ${
@@ -31,7 +31,7 @@ const StatsCard = ({ label, value, icon: Icon, iconColor, className = '' }) => {
           >
             {label}
           </p>
-          <p className={`text-2xl font-bold tabular-nums ${darkMode ? 'text-stone-50' : 'text-stone-900'}`}>
+          <p className={`text-xl font-bold tabular-nums sm:text-2xl ${darkMode ? 'text-stone-50' : 'text-stone-900'}`}>
             {value ?? 0}
           </p>
         </div>
@@ -59,7 +59,7 @@ export const StatsCards = ({ cards, columns = 4, className = '' }) => {
   };
 
   return (
-    <div className={`mb-6 grid grid-cols-1 gap-4 ${gridCols[columns] || 'md:grid-cols-4'} ${className}`}>
+    <div className={`mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 ${gridCols[columns] || 'lg:grid-cols-4'} ${className}`}>
       {cards.map((card, index) => (
         <StatsCard
           key={index}

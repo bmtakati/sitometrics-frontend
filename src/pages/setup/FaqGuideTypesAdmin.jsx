@@ -65,13 +65,6 @@ const FaqGuideTypesAdmin = () => {
   const formFields = [
     { name: 'name', label: 'Guide Type Name', type: 'text', required: true, autoFocus: true },
     { name: 'code', label: 'Code', type: 'text', required: true },
-    { name: 'description', label: 'Description', type: 'textarea', rows: 3, required: false },
-    {
-      name: 'status_id',
-      label: 'Status',
-      type: 'status_id',
-      required: true
-    },
     {
       name: 'sort_order',
       label: 'List position',
@@ -79,6 +72,13 @@ const FaqGuideTypesAdmin = () => {
       required: false,
       placeholder: '1 = top of list',
     },
+    {
+      name: 'status_id',
+      label: 'Status',
+      type: 'status_id',
+      required: true
+    },
+    { name: 'description', label: 'Description', type: 'textarea', rows: 3, required: false },
   ];
 
   return (

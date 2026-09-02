@@ -160,22 +160,22 @@ const DocumentPreviewModal = ({ isOpen, title, url, onClose }) => {
       aria-modal="true"
     >
       <div
-        className="relative w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-4xl rounded-2xl border border-gray-200 bg-white shadow-2xl overflow-hidden dark:border-gray-700 dark:bg-gray-900"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-3 right-3 p-2 rounded-lg bg-white/90 hover:bg-white transition-colors text-gray-700"
+          className="absolute top-3 right-3 z-10 p-2 rounded-lg bg-white/90 hover:bg-white transition-colors text-gray-700 dark:bg-gray-800/90 dark:text-gray-200 dark:hover:bg-gray-700"
           aria-label="Close"
         >
           <FiX className="w-5 h-5" />
         </button>
 
-        <div className="bg-white dark:bg-gray-900 border-b px-6 py-4">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 px-6 py-4 dark:border-gray-700">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg border flex items-center justify-center bg-red-50 border-red-200">
-              <FaFilePdf className="w-5 h-5 text-red-600" aria-hidden />
+            <div className="w-10 h-10 rounded-lg border flex items-center justify-center bg-red-50 border-red-200 dark:border-red-900/60 dark:bg-red-950/40">
+              <FaFilePdf className="w-5 h-5 text-red-600 dark:text-red-400" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-1">{title || 'Document'}</h2>
@@ -190,7 +190,7 @@ const DocumentPreviewModal = ({ isOpen, title, url, onClose }) => {
               className={`px-4 py-2 rounded-lg text-sm font-semibold ${
                 hasUrl
                   ? 'bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-500'
               }`}
             >
               {actionLoading ? 'Please wait...' : 'Download'}
@@ -202,7 +202,7 @@ const DocumentPreviewModal = ({ isOpen, title, url, onClose }) => {
               className={`px-4 py-2 rounded-lg border text-sm font-semibold ${
                 hasUrl
                   ? 'border-gray-300 bg-white hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-100 disabled:opacity-60 disabled:cursor-not-allowed'
-                  : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500'
               }`}
             >
               Print
@@ -213,7 +213,7 @@ const DocumentPreviewModal = ({ isOpen, title, url, onClose }) => {
         <div className="bg-white dark:bg-gray-900">
           <div className="p-4">
             {loading ? (
-              <div className="h-[60vh] flex items-center justify-center text-gray-500 text-sm">
+              <div className="h-[60vh] flex items-center justify-center text-gray-500 text-sm dark:text-gray-400">
                 Loading preview...
               </div>
             ) : null}
@@ -223,7 +223,7 @@ const DocumentPreviewModal = ({ isOpen, title, url, onClose }) => {
                 ref={previewRef}
                 title={title || 'Document preview'}
                 src={assetUrl}
-                className="w-full h-[60vh] rounded-xl border"
+                className="w-full h-[60vh] rounded-xl border border-gray-200 bg-white dark:border-gray-700"
                 onLoad={() => setLoading(false)}
               />
             ) : (

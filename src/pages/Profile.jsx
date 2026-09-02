@@ -4,7 +4,7 @@ import { FiUser, FiMail, FiPhone, FiMapPin, FiCalendar, FiEdit2, FiCamera, FiLoc
 import Swal from 'sweetalert2';
 import { useAuth, API_BASE_URL } from '../context/AuthContext';
 import apiFetch from '../utils/apiFetch';
-import { showErrorDialog, showSuccessToast } from '../utils/dialogUtils';
+import { fireAlert, showErrorDialog, showSuccessToast } from '../utils/dialogUtils';
 
 const Profile = () => {
   const location = useLocation();
@@ -66,40 +66,24 @@ const Profile = () => {
   const handleSave = () => {
     setProfileData({ ...editData });
     setIsEditing(false);
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'success',
-      title: 'Profile updated successfully',
-      showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true,
-    });
+    showSuccessToast('Profile updated successfully');
   };
 
   const handleAvatarChange = () => {
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'info',
-      title: 'Avatar upload feature coming soon',
-      showConfirmButton: false,
-      timer: 2000,
-      timerProgressBar: true,
-    });
+    showSuccessToast('Avatar upload feature coming soon', 'info');
   };
 
   const handlePasswordChange = () => {
-    Swal.fire({
-      title: 'Change Password',
+    fireAlert({
+      width: '22rem',
       html: `
-        <input type="password" id="current-password" class="swal2-input" placeholder="Current Password">
-        <input type="password" id="new-password" class="swal2-input" placeholder="New Password">
-        <input type="password" id="confirm-password" class="swal2-input" placeholder="Confirm New Password">
+        <p class="compact-alert-heading">Change password</p>
+        <input type="password" id="current-password" class="swal2-input compact-alert-input" placeholder="Current password">
+        <input type="password" id="new-password" class="swal2-input compact-alert-input" placeholder="New password">
+        <input type="password" id="confirm-password" class="swal2-input compact-alert-input" placeholder="Confirm new password">
       `,
       showCancelButton: true,
-      confirmButtonText: 'Update Password',
-      confirmButtonColor: '#0ea5e9',
+      confirmButtonText: 'Update password',
       preConfirm: async () => {
         const currentPassword = document.getElementById('current-password').value;
         const newPassword = document.getElementById('new-password').value;

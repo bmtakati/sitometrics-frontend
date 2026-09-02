@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { FiAlertCircle, FiClock } from 'react-icons/fi';
+import useDarkMode from '../../hooks/useDarkMode';
 
 const InactivityTimeout = () => {
   const [showModal, setShowModal] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const { logout } = useAuth();
+  const darkMode = useDarkMode();
   const navigate = useNavigate();
   
   const INACTIVITY_TIME = (import.meta.env.VITE_INACTIVITY_TIMEOUT_MINUTES || 15) * 60 * 1000; // Convert minutes to milliseconds
@@ -93,7 +95,7 @@ const InactivityTimeout = () => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 animate-scale-up">
+      <div className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-transparent'} rounded-2xl border shadow-2xl max-w-md w-full mx-4 animate-scale-up`}>
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-center mb-4">
@@ -103,16 +105,16 @@ const InactivityTimeout = () => {
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
+          <h2 className={`text-2xl font-bold text-center mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             Are you still there?
           </h2>
 
           {/* Message */}
           <div className="text-center mb-6">
-            <p className="text-gray-600 mb-3">
+            <p className={`mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               You've been inactive for a while. For your security, you'll be logged out in:
             </p>
-            <div className="inline-flex items-center gap-2 bg-warning-50 border border-warning-200 rounded-lg px-4 py-2">
+            <div className="inline-flex items-center gap-2 bg-warning-50 border border-warning-200 rounded-lg px-4 py-2 dark:border-warning-900/60 dark:bg-warning-950/30">
               <FiAlertCircle className="w-5 h-5 text-info-600" />
               <span className="text-3xl font-bold text-info-600">{countdown}</span>
               <span className="text-sm text-info-600">seconds</span>
@@ -123,7 +125,7 @@ const InactivityTimeout = () => {
           <div className="flex gap-3">
             <button
               onClick={handleLogout}
-              className="flex-1 px-3 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-200"
+              className="flex-1 px-3 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
             >
               Logout
             </button>

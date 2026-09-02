@@ -39,6 +39,7 @@ import { API_BASE_URL } from '../../context/AuthContext';
 import apiFetch from '../../utils/apiFetch';
 import useDarkMode from '../../hooks/useDarkMode';
 import useSyncCompleteReload from '../../hooks/useSyncCompleteReload';
+import { formatDateTime } from '../../utils/formatDate';
 import DataTable from '../DataTable';
 import ViewModal from '../ViewModal/ViewModal';
 import PageHeader from '../PageHeader';
@@ -550,7 +551,7 @@ const SisSyncPanel = ({ config, darkMode }) => {
         </div>
 
         {loading && !log && (
-          <div className="flex items-center gap-3 text-gray-500 py-4">
+          <div className={`flex items-center gap-3 py-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             <FiLoader className="w-5 h-5 animate-spin" />
             <span className="text-sm">Loading status…</span>
           </div>
@@ -588,8 +589,8 @@ const SisSyncPanel = ({ config, darkMode }) => {
               {[
                 ['Sync Log ID',   `#${log.id}`],
                 ['Batch ID',      batch?.id ? `${batch.id.slice(0, 16)}…` : '—'],
-                ['Started At',    log.started_at  ? new Date(log.started_at).toLocaleString()  : '—'],
-                ['Finished At',   log.finished_at ? new Date(log.finished_at).toLocaleString() : 'Not finished'],
+                ['Started At',    log.started_at  ? formatDateTime(log.started_at)  : '—'],
+                ['Finished At',   log.finished_at ? formatDateTime(log.finished_at) : 'Not finished'],
                 ['Page Size',     log.page_size   ?? '—'],
                 ['Records Saved', log.inserted_records?.toLocaleString() ?? '—'],
               ].map(([k, v]) => (
@@ -665,7 +666,7 @@ const SyncHistoryPanel = ({ config, darkMode }) => {
           <div className={`font-semibold ${dm ? 'text-white' : 'text-gray-900'}`}>
             {row.total_records?.toLocaleString() ?? '—'}
           </div>
-          <div className="text-xs text-gray-500">{row.inserted_records?.toLocaleString() ?? 0} saved</div>
+          <div className={`text-xs ${dm ? 'text-gray-400' : 'text-gray-500'}`}>{row.inserted_records?.toLocaleString() ?? 0} saved</div>
         </div>
       ),
     },
@@ -697,22 +698,14 @@ const SyncHistoryPanel = ({ config, darkMode }) => {
     {
       header: 'Started',
       accessor: 'started_at',
+      type: 'datetime',
       noWrap: true,
-      render: (row, dm) => (
-        <span className={`text-xs ${dm ? 'text-gray-400' : 'text-gray-600'}`}>
-          {row.started_at ? new Date(row.started_at).toLocaleString() : '—'}
-        </span>
-      ),
     },
     {
       header: 'Finished',
       accessor: 'finished_at',
+      type: 'datetime',
       noWrap: true,
-      render: (row, dm) => (
-        <span className={`text-xs ${dm ? 'text-gray-400' : 'text-gray-600'}`}>
-          {row.finished_at ? new Date(row.finished_at).toLocaleString() : '—'}
-        </span>
-      ),
     },
   ];
 
