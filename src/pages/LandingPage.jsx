@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth, API_BASE_URL } from '../context/AuthContext';
-import footerBg from '../assets/bg.png';
 import { 
   FiCheckCircle, 
   FiUsers, 
@@ -743,15 +742,9 @@ const LandingPage = () => {
     },
     {
       title: 'Interactive Slider',
-      description: 'Browse key capabilities using the image slider. You can also use arrow keys for navigation.',
+      description: 'Browse key capabilities using the full-width image slider. You can also use arrow keys for navigation.',
       target: '.slider-area',
-      position: 'right',
-    },
-    {
-      title: 'System Information',
-      description: 'Find key information about SITOMETRICS ERP and sign in to your workspace.',
-      target: '.info-panel',
-      position: 'left',
+      position: 'bottom',
     },
     {
       title: 'Quick Login',
@@ -917,8 +910,8 @@ const LandingPage = () => {
     setGetStartedLoading(true);
     setTimeout(() => {
       setGetStartedLoading(false);
-      setShowLoginModal(true);
-    }, 500);
+      openLoginModal();
+    }, 300);
   };
 
   const handleLearnMore = () => {
@@ -1047,6 +1040,19 @@ const LandingPage = () => {
 
             {/* Header utilities */}
             <div className="nav-preferences flex items-center gap-0.5 sm:gap-1 shrink-0 ml-auto lg:ml-0">
+              <button
+                type="button"
+                onClick={openLoginModal}
+                className={`login-btn-nav inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  darkMode
+                    ? 'text-green-400 hover:bg-gray-800/80 focus:ring-green-500 focus:ring-offset-gray-900'
+                    : 'text-green-700 hover:bg-green-50 focus:ring-green-600 focus:ring-offset-white'
+                }`}
+                aria-label="Open login modal"
+              >
+                <FiLock className="h-4 w-4" />
+                <span className="hidden sm:inline">Login</span>
+              </button>
               <NavIconDropdown
                 id="landing-theme"
                 value={themePreference}
@@ -1094,172 +1100,120 @@ const LandingPage = () => {
         <HeaderAccentBar />
       </nav>
 
-      {/* Hero Section with Slider and Info Panel */}
-      <section id="home" className={`relative overflow-hidden pt-16 lg:min-h-screen lg:h-screen ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
-        <div className={`flex flex-col lg:flex-row min-h-[calc(100svh-4rem)] lg:h-full ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
-          {/* Left Side - Image Slider (70%) */}
-          <div 
-            className={`slider-area relative w-full h-[clamp(320px,58svh,520px)] sm:h-[clamp(380px,62svh,600px)] lg:w-[70%] lg:flex-none lg:h-[calc(100%-2.5rem)] shadow-xl lg:order-1 m-0 lg:mt-5 lg:ml-5 lg:mb-5 rounded-none lg:rounded-3xl overflow-hidden shrink-0 touch-pan-y ${darkMode ? 'bg-gray-900' : 'bg-white'}`}
-            onMouseEnter={() => setIsSliderPaused(true)}
-            onMouseLeave={() => setIsSliderPaused(false)}
-            role="region"
-            aria-label="Image carousel"
-          >
-            {slidesList.map((slide, index) => (
-              <div
-                key={slide.id}
-                className={`absolute inset-0 transition-opacity duration-1000 ${
-                  index === currentSlide ? 'opacity-100' : 'opacity-0'
+      {/* Hero Section — full-width slideshow */}
+      <section id="home" className={`relative overflow-hidden pt-16 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+        <div
+          className={`slider-area relative w-full h-[clamp(360px,70svh,720px)] lg:h-[calc(100svh-4rem)] overflow-hidden touch-pan-y ${
+            darkMode ? 'bg-gray-900' : 'bg-white'
+          }`}
+          onMouseEnter={() => setIsSliderPaused(true)}
+          onMouseLeave={() => setIsSliderPaused(false)}
+          role="region"
+          aria-label="Image carousel"
+        >
+          {slidesList.map((slide, index) => (
+            <div
+              key={slide.id}
+              className={`absolute inset-0 transition-opacity duration-1000 ${
+                index === currentSlide ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              {!loadedImages[slide.id] && (
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 animate-pulse" />
+              )}
+
+              <img
+                src={slide.image}
+                alt={slide.title}
+                loading={index === 0 ? 'eager' : 'lazy'}
+                fetchpriority={index === 0 ? 'high' : 'auto'}
+                onLoad={() => handleImageLoad(slide.id)}
+                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
+                  loadedImages[slide.id] ? 'opacity-100' : 'opacity-0'
                 }`}
-              >
-                {/* Loading Skeleton */}
-                {!loadedImages[slide.id] && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 animate-pulse" />
-                )}
-                
-                {/* Lazy loaded image */}
-                <img
-                  src={slide.image}
-                  alt={slide.title}
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                  fetchpriority={index === 0 ? 'high' : 'auto'}
-                  onLoad={() => handleImageLoad(slide.id)}
-                  className={`absolute inset-0 w-full h-full object-cover transform transition-all duration-1000 hover:scale-105 ${
-                    loadedImages[slide.id] ? 'opacity-100' : 'opacity-0'
-                  }`}
-                />
-                <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient}`} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="mx-auto w-full max-w-5xl px-14 py-10 text-center sm:px-16 lg:px-12">
-                    <h2 className="text-[clamp(1.75rem,8vw,2.75rem)] sm:text-4xl lg:text-6xl font-extrabold text-white mb-3 sm:mb-5 lg:mb-6 fade-in drop-shadow-2xl tracking-tight leading-tight">
-                      {slide.title}
-                    </h2>
-                    <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-50 mb-5 sm:mb-7 lg:mb-8 max-w-2xl mx-auto fade-in drop-shadow-lg font-medium leading-relaxed">
-                      {slide.description}
-                    </p>
-                    <div className="flex flex-col min-[420px]:flex-row gap-3 sm:gap-4 justify-center fade-in">
-                      <button 
-                        onClick={handleGetStarted}
-                        disabled={getStartedLoading}
-                        aria-label="Get started with SITOMETRICS"
-                        className="btn w-full min-[420px]:w-auto bg-white text-primary-600 hover:bg-gray-100 px-5 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base font-semibold disabled:opacity-70 disabled:cursor-not-allowed shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
-                      >
-                        {getStartedLoading ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-                            Loading...
-                          </span>
-                        ) : (
-                          'Get Started'
-                        )}
-                      </button>
-                      <button 
-                        onClick={handleLearnMore}
-                        disabled={learnMoreLoading}
-                        aria-label="Learn more about SITOMETRICS"
-                        className="btn w-full min-[420px]:w-auto bg-white/10 backdrop-blur-md border-2 border-white text-white hover:bg-white hover:text-gray-900 px-5 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base font-semibold disabled:opacity-70 disabled:cursor-not-allowed shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
-                      >
-                        {learnMoreLoading ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            Loading...
-                          </span>
-                        ) : (
-                          'Learn More'
-                        )}
-                      </button>
-                    </div>
+              />
+              <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient}`} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="mx-auto w-full max-w-5xl px-14 py-10 text-center sm:px-16 lg:px-12">
+                  <h2 className="mb-3 text-[clamp(1.75rem,8vw,2.75rem)] font-extrabold leading-tight tracking-tight text-white drop-shadow-2xl fade-in sm:mb-5 sm:text-4xl lg:mb-6 lg:text-6xl">
+                    {slide.title}
+                  </h2>
+                  <p className="mx-auto mb-5 max-w-2xl text-sm font-medium leading-relaxed text-gray-50 drop-shadow-lg fade-in sm:mb-7 sm:text-base md:text-lg lg:mb-8 lg:text-xl">
+                    {slide.description}
+                  </p>
+                  <div className="flex flex-col justify-center gap-3 fade-in min-[420px]:flex-row sm:gap-4">
+                    <button
+                      type="button"
+                      onClick={handleGetStarted}
+                      disabled={getStartedLoading}
+                      aria-label="Get started with SITOMETRICS"
+                      className="btn w-full bg-white px-5 py-2.5 text-sm font-semibold text-primary-600 shadow-2xl transition-all duration-300 hover:bg-gray-100 hover:shadow-3xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 min-[420px]:w-auto sm:px-8 sm:py-3 sm:text-base"
+                    >
+                      {getStartedLoading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+                          Loading...
+                        </span>
+                      ) : (
+                        'Get Started'
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleLearnMore}
+                      disabled={learnMoreLoading}
+                      aria-label="Learn more about SITOMETRICS"
+                      className="btn w-full border-2 border-white bg-white/10 px-5 py-2.5 text-sm font-semibold text-white shadow-2xl backdrop-blur-md transition-all duration-300 hover:bg-white hover:text-gray-900 hover:shadow-3xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 min-[420px]:w-auto sm:px-8 sm:py-3 sm:text-base"
+                    >
+                      {learnMoreLoading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          Loading...
+                        </span>
+                      ) : (
+                        'Learn More'
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={prevSlide}
+            aria-label="Previous slide"
+            className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/20 p-2 shadow-xl backdrop-blur-md transition-all duration-300 hover:scale-110 hover:bg-white/40 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 sm:left-4 sm:p-3 lg:left-6 lg:p-4"
+          >
+            <FiChevronLeft className="h-4 w-4 text-white drop-shadow-lg sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={nextSlide}
+            aria-label="Next slide"
+            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/20 p-2 shadow-xl backdrop-blur-md transition-all duration-300 hover:scale-110 hover:bg-white/40 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 sm:right-4 sm:p-3 lg:right-6 lg:p-4"
+          >
+            <FiChevronRight className="h-4 w-4 text-white drop-shadow-lg sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
+          </button>
+
+          <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-2 sm:bottom-6 sm:gap-3 lg:bottom-8">
+            {slidesList.map((slide, index) => (
+              <button
+                key={slide.id ?? index}
+                type="button"
+                onClick={() => setCurrentSlide(index)}
+                aria-label={`Go to slide ${index + 1}: ${slide.title}`}
+                title={slide.title}
+                className={`h-2 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 ${
+                  index === currentSlide
+                    ? 'w-8 scale-110 bg-white sm:w-10'
+                    : 'w-2 bg-white/50 hover:scale-110 hover:bg-white/70'
+                }`}
+              />
             ))}
-
-            {/* Slider Controls */}
-            <button
-              onClick={prevSlide}
-              aria-label="Previous slide"
-              className="absolute left-2 sm:left-4 lg:left-6 top-1/2 -translate-y-1/2 p-2 sm:p-3 lg:p-4 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md transition-all duration-300 z-10 shadow-xl hover:shadow-2xl transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
-            >
-              <FiChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white drop-shadow-lg" />
-            </button>
-            <button
-              onClick={nextSlide}
-              aria-label="Next slide"
-              className="absolute right-2 sm:right-4 lg:right-6 top-1/2 -translate-y-1/2 p-2 sm:p-3 lg:p-4 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md transition-all duration-300 z-10 shadow-xl hover:shadow-2xl transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2"
-            >
-              <FiChevronRight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white drop-shadow-lg" />
-            </button>
-
-            {/* Slider Indicators */}
-            <div className="absolute bottom-4 sm:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 flex gap-2 sm:gap-3 z-10">
-              {slidesList.map((slide, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  aria-label={`Go to slide ${index + 1}: ${slide.title}`}
-                  title={slide.title}
-                  className={`h-2 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 ${
-                    index === currentSlide 
-                      ? 'w-8 sm:w-10 bg-white transform scale-110' 
-                      : 'w-2 bg-white/50 hover:bg-white/70 hover:scale-110'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Right Side - System Info Panel (30%) */}
-          <div className={`info-panel relative lg:w-[30%] flex-1 min-h-0 lg:min-h-0 lg:h-full flex flex-col items-center justify-center px-5 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-0 overflow-hidden lg:order-2 shadow-2xl ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
-            {/* Vertical Flag Divider */}
-            <div className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-64 flex-col rounded-l-lg overflow-hidden shadow-lg">
-              <div className={`flex-1 ${darkMode ? 'bg-gray-700' : 'bg-gray-900'}`}></div>
-            </div>
-
-            <div className="relative z-10 text-center space-y-3 sm:space-y-5 max-w-sm animate-fade-in">
-              <div className="animate-slide-up" style={{ animationDelay: '0s' }}>
-                <BrandMark className="w-20 h-20 sm:w-28 sm:h-28 lg:w-32 lg:h-32" darkMode={darkMode} />
-              </div>
-
-              <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                <h3 className={`text-base sm:text-lg font-semibold tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  SITOMETRICS ERP
-                </h3>
-              </div>
-
-              <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                <p className={`text-base sm:text-xl font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Food & Beverage Operations Platform
-                </p>
-              </div>
-
-              <div className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
-                <h2 className={`text-lg sm:text-xl font-extrabold ${darkMode ? 'text-green-400' : 'bg-gradient-to-r from-green-600 via-green-600 to-green-600 bg-clip-text text-transparent'} drop-shadow-lg filter hover:drop-shadow-2xl transition-all duration-300 hover:scale-105 cursor-default`}>
-                  Inventory · Procurement · Costing
-                </h2>
-              </div>
-
-              <div className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
-                <p className={`text-sm leading-relaxed font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  End-to-end control from purchase requisition to store issue, kitchen consumption, and reporting.
-                </p>
-              </div>
-
-              {/* Login Button */}
-              <div className="pt-2 sm:pt-4 animate-slide-up" style={{ animationDelay: '0.7s' }}>
-                <button
-                  onClick={() => setShowLoginModal(true)}
-                  aria-label="Open login modal"
-                  title ="Click to login"
-                  className={`px-8 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2 mx-auto shadow-lg hover:shadow-2xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2 border-2 ${darkMode ? 'text-green-400 border-green-400 hover:bg-green-400 hover:text-gray-900' : 'text-green-700 border-green-700 hover:bg-green-700 hover:text-white'}`}
-                >
-                  <FiLock className="w-5 h-5" />
-                  <span>Login</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
-
       </section>
 
       {/* About Section */}
@@ -2450,84 +2404,140 @@ const LandingPage = () => {
       {/* Footer */}
       <footer
         id="contact"
-        className="relative border-t border-gray-800 overflow-hidden pt-6 pb-0"
-        style={{
-          backgroundImage: `url(${footerBg})`,
-          backgroundSize: '100% 40%',
-          backgroundPosition: 'top center',
-          backgroundRepeat: 'no-repeat',
-        }}
+        className={`relative overflow-hidden border-t ${
+          darkMode
+            ? 'border-gray-800 bg-gray-950'
+            : 'border-emerald-100 bg-gradient-to-b from-slate-50 via-white to-emerald-50/70'
+        }`}
       >
         <div
-          className={`absolute inset-0 ${
-            darkMode ? 'bg-gray-900/85' : 'bg-white/85'
+          className={`pointer-events-none absolute inset-0 ${
+            darkMode
+              ? 'bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.14),transparent_34%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(17,24,39,0.98))]'
+              : 'bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.12),transparent_30%)]'
           }`}
           aria-hidden
         />
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h4 className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Stay Connected</h4>
-              <p className={`mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Subscribe to our newsletter for product updates and ERP tips.
+        <div className="container relative z-10 mx-auto px-6 py-12 md:py-14">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.25fr_1.75fr] lg:gap-14">
+            <div className="max-w-xl">
+              <div className="mb-5 flex items-center gap-3">
+                <BrandMark className="h-11 w-11 shrink-0" darkMode={darkMode} />
+                <div>
+                  <p className={`text-xl font-bold tracking-tight ${darkMode ? 'text-white' : 'text-gray-950'}`}>
+                    SITOMETRICS
+                  </p>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    F&B Inventory & Procurement ERP
+                  </p>
+                </div>
+              </div>
+              <p className={`max-w-lg text-base leading-7 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                Practical tools for procurement, inventory, service operations, reporting, and document workflows in one connected workspace.
               </p>
-              <div className="flex gap-3 mb-4">
-                <a href="#" className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-200 ${
-                  darkMode ? 'bg-gray-800 border-primary-500/40 hover:bg-primary-900/30 hover:border-primary-400' : 'bg-primary-50 border-primary-200 hover:bg-primary-100 hover:border-primary-300'
-                }`}>
-                  <FiLinkedin className={`w-5 h-5 ${darkMode ? 'text-primary-300' : 'text-primary-700'}`} />
-                </a>
-                <a href="#" className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-200 ${
-                  darkMode ? 'bg-gray-800 border-primary-500/40 hover:bg-primary-900/30 hover:border-primary-400' : 'bg-primary-50 border-primary-200 hover:bg-primary-100 hover:border-primary-300'
-                }`}>
-                  <FiTwitter className={`w-5 h-5 ${darkMode ? 'text-primary-300' : 'text-primary-700'}`} />
-                </a>
-                <a href="#" className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-200 ${
-                  darkMode ? 'bg-gray-800 border-primary-500/40 hover:bg-primary-900/30 hover:border-primary-400' : 'bg-primary-50 border-primary-200 hover:bg-primary-100 hover:border-primary-300'
-                }`}>
-                  <FiGithub className={`w-5 h-5 ${darkMode ? 'text-primary-300' : 'text-primary-700'}`} />
-                </a>
+              <div className="mt-6 flex gap-3">
+                {[
+                  { label: 'LinkedIn', icon: FiLinkedin },
+                  { label: 'Twitter', icon: FiTwitter },
+                  { label: 'GitHub', icon: FiGithub },
+                ].map(({ label, icon: Icon }) => (
+                  <a
+                    key={label}
+                    href="#"
+                    aria-label={label}
+                    className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all duration-200 ${
+                      darkMode
+                        ? 'border-gray-700 bg-gray-900/80 text-emerald-300 hover:border-emerald-500 hover:bg-emerald-500/10'
+                        : 'border-emerald-100 bg-white/80 text-emerald-700 shadow-sm shadow-emerald-100/60 hover:border-emerald-300 hover:bg-emerald-50'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </a>
+                ))}
               </div>
             </div>
-            <div>
-              <h4 className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Quick Links</h4>
-              <ul className="space-y-2">
-                <li><a href="#home" className={darkMode ? 'text-primary-300 hover:text-green-300' : 'text-primary-700 hover:text-green-600'}>Home</a></li>
-                <li><a href="#services" className={darkMode ? 'text-primary-300 hover:text-green-300' : 'text-primary-700 hover:text-green-600'}>Modules</a></li>
-                <li><a href="#about" className={darkMode ? 'text-primary-300 hover:text-green-300' : 'text-primary-700 hover:text-green-600'}>About</a></li>
-                <li><a href="#faq" className={darkMode ? 'text-primary-300 hover:text-green-300' : 'text-primary-700 hover:text-green-600'}>FAQ</a></li>
-                <li><a href="#contact" className={darkMode ? 'text-primary-300 hover:text-green-300' : 'text-primary-700 hover:text-green-600'}>Contact</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Support</h4>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    to="/faq/guides"
-                    className={darkMode ? 'text-primary-300 hover:text-green-300' : 'text-primary-700 hover:text-green-600'}
-                  >
-                    User Guides
-                  </Link>
-                </li>
-                <li><a href="#" className={darkMode ? 'text-primary-300 hover:text-green-300' : 'text-primary-700 hover:text-green-600'}>Help Center</a></li>
-                <li><a href="#" className={darkMode ? 'text-primary-300 hover:text-green-300' : 'text-primary-700 hover:text-green-600'}>Privacy Policy</a></li>
-                <li><a href="#" className={darkMode ? 'text-primary-300 hover:text-green-300' : 'text-primary-700 hover:text-green-600'}>Terms of Service</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Contact</h4>
-              <ul className="space-y-2">
-                <li className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-                  Email: {landingContactInfoLoading ? '...' : landingContactInfo.email}
-                </li>
-                <li className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-                  Phone: {landingContactInfoLoading ? '...' : landingContactInfo.phone}
-                </li>
-                <li className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-                  Address: {landingContactInfoLoading ? '...' : landingContactInfo.address}
-                </li>
-              </ul>
+
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+              {[
+                {
+                  title: 'Quick Links',
+                  items: [
+                    { label: 'Home', href: '#home' },
+                    { label: 'Modules', href: '#services' },
+                    { label: 'About', href: '#about' },
+                    { label: 'FAQ', href: '#faq' },
+                    { label: 'Contact', href: '#contact' },
+                  ],
+                },
+                {
+                  title: 'Support',
+                  items: [
+                    { label: 'User Guides', to: '/faq/guides' },
+                    { label: 'Help Center', href: '#faq' },
+                    { label: 'Privacy Policy', href: '#' },
+                    { label: 'Terms of Service', href: '#' },
+                  ],
+                },
+              ].map((group) => (
+                <div key={group.title}>
+                  <h4 className={`mb-4 text-sm font-semibold uppercase tracking-[0.18em] ${
+                    darkMode ? 'text-gray-200' : 'text-gray-900'
+                  }`}>
+                    {group.title}
+                  </h4>
+                  <ul className="space-y-3">
+                    {group.items.map((item) => (
+                      <li key={item.label}>
+                        {item.to ? (
+                          <Link
+                            to={item.to}
+                            className={`text-sm transition-colors ${
+                              darkMode ? 'text-gray-400 hover:text-emerald-300' : 'text-gray-600 hover:text-emerald-700'
+                            }`}
+                          >
+                            {item.label}
+                          </Link>
+                        ) : (
+                          <a
+                            href={item.href}
+                            className={`text-sm transition-colors ${
+                              darkMode ? 'text-gray-400 hover:text-emerald-300' : 'text-gray-600 hover:text-emerald-700'
+                            }`}
+                          >
+                            {item.label}
+                          </a>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+
+              <div>
+                <h4 className={`mb-4 text-sm font-semibold uppercase tracking-[0.18em] ${
+                  darkMode ? 'text-gray-200' : 'text-gray-900'
+                }`}>
+                  Contact
+                </h4>
+                <ul className="space-y-4">
+                  {[
+                    { icon: FiMail, label: landingContactInfo.email },
+                    { icon: FiPhone, label: landingContactInfo.phone },
+                    { icon: FiMapPin, label: landingContactInfo.address },
+                  ].map(({ icon: Icon, label }) => (
+                    <li key={label} className="flex min-w-0 items-start gap-3">
+                      <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                        darkMode ? 'bg-gray-900 text-emerald-300' : 'bg-white text-emerald-700 shadow-sm shadow-emerald-100/70'
+                      }`}>
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <span className={`min-w-0 text-sm leading-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {landingContactInfoLoading ? '...' : label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </div>
