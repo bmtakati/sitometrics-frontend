@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Header from '../Header/Header';
 import Sidebar from '../Sidebar/Sidebar';
 import InactivityTimeout from '../InactivityTimeout/InactivityTimeout';
+import Breadcrumb from '../Breadcrumb';
 import { useThemePreference } from '../../hooks/useThemePreference';
 
 const Layout = () => {
@@ -40,6 +41,7 @@ const Layout = () => {
         {/* Page Content */}
         <main className={`flex-1 overflow-y-auto overscroll-contain ${darkMode ? 'bg-gray-950' : 'bg-white'} px-3 py-4 sm:px-5 lg:p-6`}>
           <div className="mx-auto w-full max-w-[1600px] min-w-0">
+            <Breadcrumb />
             <Outlet />
           </div>
         </main>
