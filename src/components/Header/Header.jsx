@@ -141,6 +141,19 @@ const Header = ({ onMenuClick }) => {
             </button>
           )}
 
+          <div className="min-w-0 flex-1">
+            <p className={`truncate text-sm font-semibold leading-5 sm:text-base ${
+              darkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              {fullName}
+            </p>
+            <p className={`truncate text-xs font-medium leading-4 ${
+              darkMode ? 'text-emerald-300' : 'text-emerald-700'
+            }`}>
+              {primaryRole}
+            </p>
+          </div>
+
           <div className="nav-preferences flex min-w-0 items-center gap-0.5 sm:gap-1 shrink-0 ml-auto">
             <NavIconDropdown
               id="header-theme"
