@@ -390,7 +390,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
             <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-emerald-500/70 to-transparent" aria-hidden />
             {!isCollapsed ? (
               <>
-                <SitometricsLogo darkMode={darkMode} title="ADMIN PANEL" showSubtitle={false} />
+                <SitometricsLogo darkMode={darkMode} title="F&B" showSubtitle={false} />
                 <button
                   onClick={onClose}
                   className={`hidden rounded-lg p-2 transition-all duration-200 lg:flex ${

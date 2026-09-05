@@ -108,19 +108,13 @@ const Breadcrumb = () => {
   const textClass = darkMode ? 'text-gray-400' : 'text-gray-500';
   const activeClass = darkMode ? 'text-gray-100' : 'text-gray-900';
   const linkClass = darkMode ? 'hover:text-emerald-300' : 'hover:text-emerald-700';
-  const shellClass = darkMode
-    ? 'border-gray-800 bg-gray-900/70'
-    : 'border-emerald-100 bg-emerald-50/60';
 
   return (
-    <nav
-      aria-label="Breadcrumb"
-      className={`mb-4 overflow-x-auto rounded-lg border px-3 py-2 shadow-sm ${shellClass}`}
-    >
-      <ol className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-xs font-medium sm:text-sm">
+    <nav aria-label="Breadcrumb" className="overflow-x-auto">
+      <ol className="flex min-w-0 items-center gap-1 whitespace-nowrap text-[11px] font-medium leading-4">
         <li className="flex items-center">
-          <Link to="/" className={`inline-flex items-center gap-1 transition-colors ${textClass} ${linkClass}`}>
-            <FiHome className="h-3.5 w-3.5" />
+          <Link to="/" className={`inline-flex items-center gap-0.5 transition-colors ${textClass} ${linkClass}`}>
+            <FiHome className="h-3 w-3" />
             <span>Dashboard</span>
           </Link>
         </li>
@@ -129,8 +123,8 @@ const Breadcrumb = () => {
             {breadcrumbs.map((label, index) => {
               const isLast = index === breadcrumbs.length - 1;
               return (
-                <li key={`${label}-${index}`} className="flex items-center gap-1.5">
-                  <FiChevronRight className={`h-3.5 w-3.5 shrink-0 ${textClass}`} />
+                <li key={`${label}-${index}`} className="flex items-center gap-1">
+                  <FiChevronRight className={`h-3 w-3 shrink-0 ${textClass}`} />
                   <span className={`truncate ${isLast ? activeClass : textClass}`}>
                     {label}
                   </span>

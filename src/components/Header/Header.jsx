@@ -243,28 +243,28 @@ const Header = ({ onMenuClick }) => {
                 setShowProfile(!showProfile);
                 setShowNotifications(false);
               }}
-              className={`flex items-center p-1 rounded-md ${darkMode ? 'hover:bg-gray-800/80' : 'hover:bg-gray-100'} transition-colors`}
+              className={`flex min-w-0 items-center gap-2 rounded-md p-1 ${darkMode ? 'hover:bg-gray-800/80' : 'hover:bg-gray-100'} transition-colors`}
               aria-label="Open profile menu"
             >
               <div className={`w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-semibold ring-2 ${darkMode ? 'ring-gray-700' : 'ring-gray-200'}`}>
                 {fullName.charAt(0).toUpperCase()}
               </div>
+              <div className="hidden min-w-0 max-w-[11rem] text-left sm:block lg:max-w-[14rem]">
+                <p className={`truncate text-sm font-semibold leading-5 ${
+                  darkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  {fullName}
+                </p>
+                <p className={`truncate text-xs font-medium leading-4 ${
+                  darkMode ? 'text-emerald-300' : 'text-emerald-700'
+                }`}>
+                  {primaryRole}
+                </p>
+              </div>
             </button>
-            <div className="hidden min-w-0 max-w-[11rem] text-left sm:block lg:max-w-[14rem]">
-              <p className={`truncate text-sm font-semibold leading-5 ${
-                darkMode ? 'text-white' : 'text-gray-900'
-              }`}>
-                {fullName}
-              </p>
-              <p className={`truncate text-xs font-medium leading-4 ${
-                darkMode ? 'text-emerald-300' : 'text-emerald-700'
-              }`}>
-                {primaryRole}
-              </p>
-            </div>
 
             {showProfile && (
-              <div className={`fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-56 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-300'} rounded-xl shadow-dropdown border py-2 fade-in`}>
+              <div className={`fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-56 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-300'} rounded-xl shadow-dropdown border py-2 fade-in`}>
                 <div className={`px-4 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                   <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{fullName}</p>
                   <p className={`text-xs font-medium mt-0.5 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>{primaryRole} &ndash; {scopeLabel}</p>
