@@ -22,17 +22,6 @@ import {
 
 export const setupMenuChildren = [
   {
-    id: 'setup-property',
-    label: 'Property & Outlets',
-    icon: FiMapPin,
-    color: 'text-emerald-600',
-    children: [
-      { id: 'hotels', label: 'Hotels', path: '/setup/hotels', icon: FiHome, color: 'text-emerald-600' },
-      { id: 'outlets', label: 'Outlets', path: '/setup/outlets', icon: FiCoffee, color: 'text-orange-600' },
-      { id: 'order-types', label: 'Order Types', path: '/setup/order-types', icon: FiClipboard, color: 'text-sky-600' },
-    ],
-  },
-  {
     id: 'setup-system',
     label: 'System',
     icon: FiCpu,
@@ -42,6 +31,17 @@ export const setupMenuChildren = [
       { id: 'statuses', label: 'Statuses', path: '/setup/statuses', icon: FiTag, color: 'text-rose-600' },
       { id: 'status-groups', label: 'Status Categories', path: '/setup/status-groups', icon: FiLayers, color: 'text-violet-600' },
       { id: 'status-mapping', label: 'Status Mapping', path: '/setup/status-mapping', icon: FiSliders, color: 'text-cyan-600' },
+    ],
+  },
+  {
+    id: 'setup-property',
+    label: 'Property & Outlets',
+    icon: FiMapPin,
+    color: 'text-emerald-600',
+    children: [
+      { id: 'hotels', label: 'Hotels', path: '/setup/hotels', icon: FiHome, color: 'text-emerald-600' },
+      { id: 'outlets', label: 'Outlets', path: '/setup/outlets', icon: FiCoffee, color: 'text-orange-600' },
+      { id: 'order-types', label: 'Order Types', path: '/setup/order-types', icon: FiClipboard, color: 'text-sky-600' },
     ],
   },
   {
