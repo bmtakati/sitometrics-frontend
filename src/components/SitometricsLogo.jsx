@@ -2,7 +2,14 @@ import React from 'react';
 import { FiBarChart2 } from 'react-icons/fi';
 import PropTypes from 'prop-types';
 
-const SitometricsLogo = ({ collapsed = false, darkMode = false, className = '' }) => {
+const SitometricsLogo = ({
+  collapsed = false,
+  darkMode = false,
+  className = '',
+  title = 'SITOMETRICS',
+  subtitle = 'F&B Inventory & Procurement',
+  showSubtitle = true,
+}) => {
   const iconShell = `flex shrink-0 items-center justify-center rounded-xl border transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg ${
     darkMode
       ? 'border-emerald-700/50 bg-emerald-950/60 text-emerald-400 group-hover:border-emerald-500 group-hover:bg-emerald-900/70 group-hover:text-emerald-300 group-hover:shadow-emerald-900/40'
@@ -30,15 +37,17 @@ const SitometricsLogo = ({ collapsed = false, darkMode = false, className = '' }
             darkMode ? 'text-stone-50 group-hover:text-emerald-300' : 'text-stone-900'
           }`}
         >
-          SITOMETRICS
+          {title}
         </h1>
-        <p
-          className={`truncate text-[10px] uppercase tracking-wider transition-colors duration-300 group-hover:text-emerald-600 ${
-            darkMode ? 'text-emerald-500/80 group-hover:text-emerald-400' : 'text-emerald-700'
-          }`}
-        >
-          F&B Inventory & Procurement
-        </p>
+        {showSubtitle && (
+          <p
+            className={`truncate text-[10px] uppercase tracking-wider transition-colors duration-300 group-hover:text-emerald-600 ${
+              darkMode ? 'text-emerald-500/80 group-hover:text-emerald-400' : 'text-emerald-700'
+            }`}
+          >
+            {subtitle}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -48,6 +57,9 @@ SitometricsLogo.propTypes = {
   collapsed: PropTypes.bool,
   darkMode: PropTypes.bool,
   className: PropTypes.string,
+  title: PropTypes.string,
+  subtitle: PropTypes.string,
+  showSubtitle: PropTypes.bool,
 };
 
 export default SitometricsLogo;

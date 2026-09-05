@@ -7,6 +7,7 @@ import NavIconDropdown, {
 } from '../NavIconDropdown';
 import LanguageSwitcher from '../LanguageSwitcher';
 import HeaderAccentBar from '../HeaderAccentBar';
+import SitometricsLogo from '../SitometricsLogo';
 import { useThemePreference } from '../../hooks/useThemePreference';
 import { useFontSizePreference } from '../../hooks/useFontSizePreference';
 import { useLanguagePreference } from '../../hooks/useLanguagePreference';
@@ -142,16 +143,7 @@ const Header = ({ onMenuClick }) => {
           )}
 
           <div className="min-w-0 flex-1">
-            <p className={`truncate text-sm font-semibold leading-5 sm:text-base ${
-              darkMode ? 'text-white' : 'text-gray-900'
-            }`}>
-              {fullName}
-            </p>
-            <p className={`truncate text-xs font-medium leading-4 ${
-              darkMode ? 'text-emerald-300' : 'text-emerald-700'
-            }`}>
-              {primaryRole}
-            </p>
+            <SitometricsLogo darkMode={darkMode} className="max-w-[220px] sm:max-w-xs" />
           </div>
 
           <div className="nav-preferences flex min-w-0 items-center gap-0.5 sm:gap-1 shrink-0 ml-auto">
@@ -245,7 +237,7 @@ const Header = ({ onMenuClick }) => {
             )}
           </div>
 
-          <div className="relative" ref={profileRef}>
+          <div className="relative flex items-center gap-2" ref={profileRef}>
             <button
               onClick={() => {
                 setShowProfile(!showProfile);
@@ -258,6 +250,18 @@ const Header = ({ onMenuClick }) => {
                 {fullName.charAt(0).toUpperCase()}
               </div>
             </button>
+            <div className="hidden min-w-0 max-w-[11rem] text-left sm:block lg:max-w-[14rem]">
+              <p className={`truncate text-sm font-semibold leading-5 ${
+                darkMode ? 'text-white' : 'text-gray-900'
+              }`}>
+                {fullName}
+              </p>
+              <p className={`truncate text-xs font-medium leading-4 ${
+                darkMode ? 'text-emerald-300' : 'text-emerald-700'
+              }`}>
+                {primaryRole}
+              </p>
+            </div>
 
             {showProfile && (
               <div className={`fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-56 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-300'} rounded-xl shadow-dropdown border py-2 fade-in`}>
