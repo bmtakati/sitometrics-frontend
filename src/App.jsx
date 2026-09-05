@@ -3,82 +3,94 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { hasPermission } from './utils/permissions';
 import Layout from './components/Layout/Layout';
-import Dashboard from './pages/Dashboard';
-import LandingPage from './pages/LandingPage';
-import LandingPageTest from './pages/LandingPageTest';
-import ResetPassword from './pages/ResetPassword';
-import Permissions from './pages/Permissions';
-import PasswordPolicy from './pages/PasswordPolicy';
-import PasswordHistory from './pages/PasswordHistory';
-import Roles from './pages/Roles';
-import UserList from './pages/UserList';
-import RoleHandover from './pages/RoleHandover';
-import Profile from './pages/Profile';
+
+const PageLoader = () => (
+  <div className="min-h-[50vh] flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+    <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LandingPageTest = lazy(() => import('./pages/LandingPageTest'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const Permissions = lazy(() => import('./pages/Permissions'));
+const PasswordPolicy = lazy(() => import('./pages/PasswordPolicy'));
+const PasswordHistory = lazy(() => import('./pages/PasswordHistory'));
+const Roles = lazy(() => import('./pages/Roles'));
+const UserList = lazy(() => import('./pages/UserList'));
+const RoleHandover = lazy(() => import('./pages/RoleHandover'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 // Logs Pages
-import AuditTrail from './pages/logs/AuditTrail';
-import Errors from './pages/logs/Errors';
-import FailedLogins from './pages/logs/FailedLogins';
+const AuditTrail = lazy(() => import('./pages/logs/AuditTrail'));
+const Errors = lazy(() => import('./pages/logs/Errors'));
+const FailedLogins = lazy(() => import('./pages/logs/FailedLogins'));
 
 // Reports Pages
-import ReportsList from './pages/reports/ReportsList';
-import SalesReport from './pages/reports/SalesReport';
-import SuppliersReport from './pages/reports/SuppliersReport';
+const ReportsList = lazy(() => import('./pages/reports/ReportsList'));
+const SalesReport = lazy(() => import('./pages/reports/SalesReport'));
+const SuppliersReport = lazy(() => import('./pages/reports/SuppliersReport'));
 
 // Notifications Pages
-import AllNotifications from './pages/notifications/AllNotifications';
-import Unread from './pages/notifications/Unread';
-import SystemAlerts from './pages/notifications/SystemAlerts';
-import Announcements from './pages/notifications/Announcements';
+const AllNotifications = lazy(() => import('./pages/notifications/AllNotifications'));
+const Unread = lazy(() => import('./pages/notifications/Unread'));
+const SystemAlerts = lazy(() => import('./pages/notifications/SystemAlerts'));
+const Announcements = lazy(() => import('./pages/notifications/Announcements'));
 
-// FAQ Pages (code-split: not loaded until first visit; ContactSupport stays eager — LandingPage uses it for modal)
+// FAQ Pages
 const GeneralQuestions = lazy(() => import('./pages/faq/GeneralQuestions'));
 const GuideTypes = lazy(() => import('./pages/faq/GuideTypes'));
 const UserGuides = lazy(() => import('./pages/faq/UserGuides'));
 const QuestionCategories = lazy(() => import('./pages/faq/QuestionCategories'));
 const Troubleshooting = lazy(() => import('./pages/faq/Troubleshooting'));
-import ContactSupport from './pages/faq/ContactSupport';
+const ContactSupport = lazy(() => import('./pages/faq/ContactSupport'));
 
 // Setup Pages
-import Module from './pages/setup/Module';
-import Statuses from './pages/setup/Statuses';
-import StatusGroups from './pages/setup/StatusGroups';
-import StatusMapping from './pages/setup/StatusMapping';
+const Module = lazy(() => import('./pages/setup/Module'));
+const Statuses = lazy(() => import('./pages/setup/Statuses'));
+const StatusGroups = lazy(() => import('./pages/setup/StatusGroups'));
+const StatusMapping = lazy(() => import('./pages/setup/StatusMapping'));
 const FaqGeneralQuestionsAdmin = lazy(() => import('./pages/setup/FaqGeneralQuestionsAdmin'));
 const FaqUserGuidesAdmin = lazy(() => import('./pages/setup/FaqUserGuidesAdmin'));
 const FaqTroubleshootingAdmin = lazy(() => import('./pages/setup/FaqTroubleshootingAdmin'));
-import FaqContactSupportAdmin from './pages/setup/FaqContactSupportAdmin';
-import ItemCategory from './pages/setup/ItemCategory';
-import FoodCategory from './pages/setup/FoodCategory';
-import BeverageCategory from './pages/setup/BeverageCategory';
-import Item from './pages/setup/Item';
-import Unit from './pages/setup/Unit';
-import Currency from './pages/setup/Currency';
-import PaymentMethod from './pages/setup/PaymentMethod';
-import OrderType from './pages/setup/OrderType';
-import ExchangeRate from './pages/setup/ExchangeRate';
-import Locale from './pages/setup/Locale';
-import SlideshowSlides from './pages/setup/SlideshowSlides';
-import Hotel from './pages/setup/Hotel';
-import Outlet from './pages/setup/Outlet';
-import Supplier from './pages/procurement/Supplier';
-import Store from './pages/setup/Store';
-import PurchaseRequisition from './pages/procurement/PurchaseRequisition';
-import LocalPurchaseOrder from './pages/procurement/LocalPurchaseOrder';
-import GoodsReceivedNote from './pages/procurement/GoodsReceivedNote';
-import StoreRequest from './pages/procurement/StoreRequest';
-import StoreIssue from './pages/procurement/StoreIssue';
-import StockAdjustment from './pages/procurement/StockAdjustment';
-import StockCountSession from './pages/procurement/StockCountSession';
-import Menu from './pages/procurement/Menu';
-import MenuRecipe from './pages/procurement/MenuRecipe';
-import ConsumptionPosting from './pages/procurement/ConsumptionPosting';
-import BarTransaction from './pages/procurement/BarTransaction';
-import WaiterOrders from './pages/service/WaiterOrders';
-import KitchenQueue from './pages/service/KitchenQueue';
-import BarQueue from './pages/service/BarQueue';
-import CashierSales from './pages/service/CashierSales';
-import DocumentVerify from './pages/DocumentVerify';
+const FaqContactSupportAdmin = lazy(() => import('./pages/setup/FaqContactSupportAdmin'));
+const ItemCategory = lazy(() => import('./pages/setup/ItemCategory'));
+const FoodCategory = lazy(() => import('./pages/setup/FoodCategory'));
+const BeverageCategory = lazy(() => import('./pages/setup/BeverageCategory'));
+const Item = lazy(() => import('./pages/setup/Item'));
+const Unit = lazy(() => import('./pages/setup/Unit'));
+const Currency = lazy(() => import('./pages/setup/Currency'));
+const PaymentMethod = lazy(() => import('./pages/setup/PaymentMethod'));
+const OrderType = lazy(() => import('./pages/setup/OrderType'));
+const ExchangeRate = lazy(() => import('./pages/setup/ExchangeRate'));
+const Locale = lazy(() => import('./pages/setup/Locale'));
+const SlideshowSlides = lazy(() => import('./pages/setup/SlideshowSlides'));
+const Hotel = lazy(() => import('./pages/setup/Hotel'));
+const Outlet = lazy(() => import('./pages/setup/Outlet'));
+const Store = lazy(() => import('./pages/setup/Store'));
+
+// Procurement Pages
+const Supplier = lazy(() => import('./pages/procurement/Supplier'));
+const PurchaseRequisition = lazy(() => import('./pages/procurement/PurchaseRequisition'));
+const LocalPurchaseOrder = lazy(() => import('./pages/procurement/LocalPurchaseOrder'));
+const GoodsReceivedNote = lazy(() => import('./pages/procurement/GoodsReceivedNote'));
+const StoreRequest = lazy(() => import('./pages/procurement/StoreRequest'));
+const StoreIssue = lazy(() => import('./pages/procurement/StoreIssue'));
+const StockAdjustment = lazy(() => import('./pages/procurement/StockAdjustment'));
+const StockCountSession = lazy(() => import('./pages/procurement/StockCountSession'));
+const Menu = lazy(() => import('./pages/procurement/Menu'));
+const MenuRecipe = lazy(() => import('./pages/procurement/MenuRecipe'));
+const ConsumptionPosting = lazy(() => import('./pages/procurement/ConsumptionPosting'));
+const BarTransaction = lazy(() => import('./pages/procurement/BarTransaction'));
+
+// Service Pages
+const WaiterOrders = lazy(() => import('./pages/service/WaiterOrders'));
+const KitchenQueue = lazy(() => import('./pages/service/KitchenQueue'));
+const BarQueue = lazy(() => import('./pages/service/BarQueue'));
+const CashierSales = lazy(() => import('./pages/service/CashierSales'));
+
+const DocumentVerify = lazy(() => import('./pages/DocumentVerify'));
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -119,11 +131,7 @@ function AppRoutes() {
 
   return (
     <Suspense
-      fallback={
-        <div className="min-h-[50vh] flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-          <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      }
+      fallback={<PageLoader />}
     >
     <Routes>
       <Route
@@ -222,13 +230,15 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          <Route path="/verify/:code" element={<DocumentVerify />} />
-          <Route path="/landing" element={<LandingPage />} />
-          <Route path="/landing-test" element={<LandingPageTest />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/*" element={<AppRoutes />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/verify/:code" element={<DocumentVerify />} />
+            <Route path="/landing" element={<LandingPage />} />
+            <Route path="/landing-test" element={<LandingPageTest />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/*" element={<AppRoutes />} />
+          </Routes>
+        </Suspense>
       </AuthProvider>
     </Router>
   );

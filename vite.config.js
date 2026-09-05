@@ -46,6 +46,12 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       sourcemap: true,
+      chunkSizeWarningLimit: 1000,
+      rolldownOptions: {
+        checks: {
+          pluginTimings: false,
+        },
+      },
     },
   };
 });
