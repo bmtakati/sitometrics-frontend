@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import {
   FiAlertCircle,
+  FiCheckCircle,
   FiClock,
+  FiInfo,
+  FiKey,
   FiLock,
   FiRefreshCw,
   FiSave,
   FiShield,
-  FiTrendingUp,
+  FiUserX,
 } from 'react-icons/fi';
 import { API_BASE_URL, useAuth } from '../context/AuthContext';
 import { hasPermission } from '../utils/permissions';
 import useDarkMode from '../hooks/useDarkMode';
-import PageHeader from '../components/PageHeader';
 import AccessDeniedState from '../components/AccessDeniedState';
 import apiFetch from '../utils/apiFetch';
 import { showErrorDialog, showSuccessToast } from '../utils/dialogUtils';
@@ -23,25 +25,113 @@ const DEFAULT_POLICY = {
   password_reuse_interval_days: 30,
 };
 
-const Switch = ({ checked, onChange, disabled = false, darkMode = false }) => {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-        ${checked ? 'bg-primary-600' : (darkMode ? 'bg-gray-600' : 'bg-gray-300')}
-        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-    >
-      <span
-        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
-          ${checked ? 'translate-x-5' : 'translate-x-0'}`}
+const requirements = [
+  'Minimum length: 8 characters',
+  'At least one uppercase letter (A-Z)',
+  'At least one lowercase letter (a-z)',
+  'At least one number (0-9)',
+  'At least one special character',
+];
+
+const Switch = ({ checked, onChange, disabled = false, darkMode = false }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    disabled={disabled}
+    onClick={() => onChange(!checked)}
+    className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
+      checked ? 'bg-emerald-600' : (darkMode ? 'bg-gray-600' : 'bg-stone-300')
+    } ${darkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'} ${
+      disabled ? 'cursor-not-allowed opacity-50' : ''
+    }`}
+  >
+    <span
+      className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+        checked ? 'translate-x-5' : 'translate-x-0'
+      }`}
+    />
+  </button>
+);
+
+const SummaryCard = ({ icon: Icon, label, value, helper, darkMode }) => (
+  <div
+    className={`rounded-xl border p-4 shadow-sm transition-colors ${
+      darkMode ? 'border-gray-700 bg-gray-900' : 'border-stone-200 bg-white'
+    }`}
+  >
+    <div className="flex items-start gap-4">
+      <div
+        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+          darkMode ? 'bg-gray-800 text-emerald-300' : 'bg-emerald-50 text-emerald-700'
+        }`}
+      >
+        <Icon className="h-6 w-6" />
+      </div>
+      <div className="min-w-0">
+        <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-slate-600'}`}>{label}</p>
+        <p className={`mt-1 text-2xl font-bold leading-7 ${darkMode ? 'text-white' : 'text-slate-950'}`}>{value}</p>
+        <p className={`mt-2 text-xs leading-5 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>{helper}</p>
+      </div>
+    </div>
+  </div>
+);
+
+const PolicyNumberField = ({
+  icon: Icon,
+  label,
+  helper,
+  value,
+  onChange,
+  disabled,
+  min,
+  max,
+  darkMode,
+  readOnly = false,
+}) => (
+  <div className="flex gap-3">
+    <Icon className={`mt-1 h-5 w-5 shrink-0 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`} />
+    <div className="min-w-0 flex-1">
+      <label className={`text-sm font-semibold ${darkMode ? 'text-gray-100' : 'text-slate-900'}`}>{label}</label>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        disabled={disabled}
+        readOnly={readOnly}
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+        className={`mt-2 w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-70 ${
+          readOnly ? 'cursor-default' : ''
+        } ${
+          darkMode
+            ? 'border-gray-700 bg-gray-800 text-white'
+            : 'border-stone-300 bg-white text-slate-950'
+        }`}
       />
-    </button>
-  );
-};
+      <p className={`mt-2 text-xs leading-5 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>{helper}</p>
+    </div>
+  </div>
+);
+
+const PolicyStaticField = ({ icon: Icon, label, value, helper, darkMode }) => (
+  <div className="flex gap-3">
+    <Icon className={`mt-1 h-5 w-5 shrink-0 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`} />
+    <div className="min-w-0 flex-1">
+      <p className={`text-sm font-semibold ${darkMode ? 'text-gray-100' : 'text-slate-900'}`}>{label}</p>
+      <div
+        className={`mt-2 rounded-lg border px-3 py-2.5 text-sm font-medium ${
+          darkMode
+            ? 'border-gray-700 bg-gray-800 text-gray-200'
+            : 'border-stone-300 bg-stone-50 text-slate-800'
+        }`}
+      >
+        {value}
+      </div>
+      <p className={`mt-2 text-xs leading-5 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>{helper}</p>
+    </div>
+  </div>
+);
 
 const PasswordPolicy = () => {
   const { user } = useAuth();
@@ -90,6 +180,7 @@ const PasswordPolicy = () => {
       setError('You do not have permission to save password policy settings.');
       return;
     }
+
     try {
       setSaving(true);
       setError('');
@@ -157,95 +248,119 @@ const PasswordPolicy = () => {
     return <AccessDeniedState message="You do not have permission to view password policy." />;
   }
 
-  return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <PageHeader
-        icon={FiLock}
-        title="Password Policy"
-        subtitle="Configure password security rules that govern password reuse, rotation, and account suspension."
-        actions={[]}
-      />
+  const cardClass = darkMode
+    ? 'border-gray-700 bg-gray-900 shadow-black/20'
+    : 'border-stone-200 bg-white shadow-stone-200/70';
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          {
-            label: 'Password History',
-            value: policy.password_history_enabled ? 'Enabled' : 'Disabled',
-            icon: FiShield,
-            iconColor: 'blue-600'
-          },
-          {
-            label: 'Attempts Limit',
-            value: policy.max_failed_login_attempts,
-            icon: FiAlertCircle,
-            iconColor: 'red-600'
-          },
-          {
-            label: 'Change Window',
-            value: `${policy.password_change_interval_days} days`,
-            icon: FiClock,
-            iconColor: 'amber-600'
-          },
-          {
-            label: 'Reuse Window',
-            value: `${policy.password_reuse_interval_days} days`,
-            icon: FiLock,
-            iconColor: 'emerald-600'
-          },
-        ].map(({ label, value, icon: Icon, iconColor }) => (
-          <div key={label} className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-stone-100 border-stone-300'} rounded-xl shadow-sm border p-4`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>{label}</p>
-                <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{value}</p>
-              </div>
-              <div className="w-12 h-12 flex items-center justify-center">
-                <Icon className={`w-8 h-8 text-${iconColor}`} strokeWidth={2.5} />
-              </div>
-            </div>
+  const mutedText = darkMode ? 'text-gray-400' : 'text-slate-500';
+
+  return (
+    <div className="mx-auto max-w-[1500px] space-y-5">
+      <section className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-start gap-4">
+          <div
+            className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${
+              darkMode ? 'bg-emerald-950/70 text-emerald-300' : 'bg-emerald-50 text-emerald-700'
+            }`}
+          >
+            <FiLock className="h-8 w-8" />
           </div>
-        ))}
-      </div>
+          <div className="min-w-0 pt-1">
+            <h1 className={`text-2xl font-bold tracking-normal sm:text-3xl ${darkMode ? 'text-white' : 'text-slate-950'}`}>
+              Password Policy
+            </h1>
+            <p className={`mt-2 max-w-3xl text-sm leading-6 sm:text-base ${darkMode ? 'text-gray-400' : 'text-slate-600'}`}>
+              Configure password security rules that govern password reuse, rotation, and account suspension.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard
+          icon={FiShield}
+          label="Password History"
+          value={policy.password_history_enabled ? 'Enabled' : 'Disabled'}
+          helper="Prevents reuse of previous passwords"
+          darkMode={darkMode}
+        />
+        <SummaryCard
+          icon={FiAlertCircle}
+          label="Attempts Limit"
+          value={policy.max_failed_login_attempts}
+          helper="Failed attempts before suspension"
+          darkMode={darkMode}
+        />
+        <SummaryCard
+          icon={FiClock}
+          label="Change Window"
+          value={`${policy.password_change_interval_days} days`}
+          helper="Password rotation interval"
+          darkMode={darkMode}
+        />
+        <SummaryCard
+          icon={FiRefreshCw}
+          label="Reuse Window"
+          value={`${policy.password_reuse_interval_days} days`}
+          helper="Days before reuse is allowed"
+          darkMode={darkMode}
+        />
+      </section>
 
       {error && (
-        <div className={`rounded-xl border p-4 ${darkMode ? 'bg-red-900/20 border-red-800/40' : 'bg-red-50 border-red-200'}`}>
+        <div className={`rounded-xl border p-4 ${darkMode ? 'border-red-800/40 bg-red-950/30' : 'border-red-200 bg-red-50'}`}>
           <div className="flex items-start gap-3">
-            <FiAlertCircle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />
-            <p className={darkMode ? 'text-red-300' : 'text-red-700'}>{error}</p>
+            <FiAlertCircle className={`mt-0.5 h-5 w-5 shrink-0 ${darkMode ? 'text-red-300' : 'text-red-600'}`} />
+            <p className={`text-sm ${darkMode ? 'text-red-200' : 'text-red-700'}`}>{error}</p>
           </div>
         </div>
       )}
 
-      <div className={`rounded-xl border overflow-hidden ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
-        <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50'}`}>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <h2 className={`text-lg font-semibold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              <FiShield className="w-5 h-5 text-primary-600" />
-              Security Policy Configuration
-            </h2>
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className={`rounded-xl border shadow-sm ${cardClass}`}>
+          <div className={`flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-center sm:justify-between ${darkMode ? 'border-gray-700' : 'border-stone-200'}`}>
+            <div className="flex min-w-0 items-start gap-3">
+              <FiShield className="mt-1 h-6 w-6 shrink-0 text-emerald-600" />
+              <div>
+                <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-950'}`}>Security Policy Configuration</h2>
+                <p className={`mt-1 text-sm ${mutedText}`}>Set the rules and restrictions for password usage in your organization.</p>
+              </div>
+            </div>
             {canSavePolicy && (
               <button
+                type="button"
                 onClick={handleSave}
                 disabled={loading || saving}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {saving ? <FiRefreshCw className="w-4 h-4 animate-spin" /> : <FiSave className="w-4 h-4" />}
+                {saving ? <FiRefreshCw className="h-4 w-4 animate-spin" /> : <FiSave className="h-4 w-4" />}
                 {saving ? 'Saving...' : 'Save Policy'}
               </button>
             )}
           </div>
-        </div>
 
-        <div className="p-6 space-y-6">
-          <div className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-stone-100 border-stone-300'} rounded-xl shadow-sm border p-5`}>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Enable Password History</h3>
-                <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  When enabled, users cannot reuse a password during the configured reuse window.
-                </p>
-              </div>
-              <div className="flex-shrink-0">
+          <div className="space-y-6 p-5">
+            <div
+              className={`rounded-xl border p-4 ${
+                darkMode ? 'border-gray-700 bg-gray-800/60' : 'border-stone-200 bg-stone-50'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                      darkMode ? 'bg-gray-900 text-emerald-300' : 'bg-white text-emerald-700'
+                    }`}
+                  >
+                    <FiKey className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-950'}`}>Enable Password History</h3>
+                    <p className={`mt-1 text-sm leading-6 ${mutedText}`}>
+                      When enabled, users cannot reuse a password during the configured reuse window.
+                    </p>
+                  </div>
+                </div>
                 {canEnablePasswordHistory && (
                   <Switch
                     checked={policy.password_history_enabled}
@@ -256,108 +371,108 @@ const PasswordPolicy = () => {
                 )}
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  disabled={!canSavePolicy}
-                  value={policy.max_failed_login_attempts}
-                  onChange={(event) => handlePolicyChange('max_failed_login_attempts', event.target.value)}
-                  placeholder=" "
-                  className={`peer w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none placeholder-transparent ${
-                    darkMode
-                      ? 'border-gray-600 bg-gray-800 text-white'
-                      : 'border-gray-300 bg-white text-gray-900'
-                  }`}
-                />
-                <label
-                  className={
-                    darkMode
-                      ? 'absolute left-2 -top-2.5 px-1 z-10 bg-gray-900 text-xs font-medium text-gray-400 transition-all pointer-events-none peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-placeholder-shown:text-gray-500 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary-400 peer-focus:bg-gray-900'
-                      : 'absolute left-2 -top-2.5 px-1 z-10 bg-white text-xs font-medium text-gray-600 transition-all pointer-events-none peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary-600 peer-focus:bg-white'
-                  }
-                >
-                  Failed Login Attempts
-                </label>
-              </div>
-              <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Attempts before account suspension</p>
-            </div>
-
-            <div>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  max="365"
-                  disabled={!canSavePolicy}
-                  value={policy.password_change_interval_days}
-                  onChange={(event) => handlePolicyChange('password_change_interval_days', event.target.value)}
-                  placeholder=" "
-                  className={`peer w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none placeholder-transparent ${
-                    darkMode
-                      ? 'border-gray-600 bg-gray-800 text-white'
-                      : 'border-gray-300 bg-white text-gray-900'
-                  }`}
-                />
-                <label
-                  className={
-                    darkMode
-                      ? 'absolute left-2 -top-2.5 px-1 z-10 bg-gray-900 text-xs font-medium text-gray-400 transition-all pointer-events-none peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-placeholder-shown:text-gray-500 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary-400 peer-focus:bg-gray-900'
-                      : 'absolute left-2 -top-2.5 px-1 z-10 bg-white text-xs font-medium text-gray-600 transition-all pointer-events-none peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary-600 peer-focus:bg-white'
-                  }
-                >
-                  Password Change Window
-                </label>
-              </div>
-              <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Days before password rotation is required</p>
-            </div>
-
-            <div>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  max="365"
-                  disabled={!canSavePolicy}
-                  value={policy.password_reuse_interval_days}
-                  onChange={(event) => handlePolicyChange('password_reuse_interval_days', event.target.value)}
-                  placeholder=" "
-                  className={`peer w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none placeholder-transparent ${
-                    darkMode
-                      ? 'border-gray-600 bg-gray-800 text-white'
-                      : 'border-gray-300 bg-white text-gray-900'
-                  }`}
-                />
-                <label
-                  className={
-                    darkMode
-                      ? 'absolute left-2 -top-2.5 px-1 z-10 bg-gray-900 text-xs font-medium text-gray-400 transition-all pointer-events-none peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-placeholder-shown:text-gray-500 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary-400 peer-focus:bg-gray-900'
-                      : 'absolute left-2 -top-2.5 px-1 z-10 bg-white text-xs font-medium text-gray-600 transition-all pointer-events-none peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary-600 peer-focus:bg-white'
-                  }
-                >
-                  Password Reuse Window
-                </label>
-              </div>
-              <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Days before previous passwords can be reused</p>
-            </div>
-          </div>
-
-          <div className={`${darkMode ? 'bg-blue-900/20 border-blue-800/40' : 'bg-blue-50 border-blue-200'} rounded-xl shadow-sm border p-4 flex gap-3`}>
-            <FiTrendingUp className={`w-5 h-5 mt-0.5 flex-shrink-0 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`} />
-            <div>
-              <p className={`font-semibold text-sm ${darkMode ? 'text-blue-200' : 'text-blue-900'}`}>Policy Impact</p>
-              <p className={`text-xs mt-1 ${darkMode ? 'text-blue-100/90' : 'text-blue-800'}`}>
-                Users will be automatically suspended after exceeding the failed-attempt threshold, required to change passwords when the rotation window expires, and prevented from reusing recent passwords within the configured window.
-              </p>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <PolicyNumberField
+                icon={FiUserX}
+                label="Failed Login Attempts"
+                helper="Number of failed attempts before account suspension."
+                value={policy.max_failed_login_attempts}
+                onChange={(value) => handlePolicyChange('max_failed_login_attempts', value)}
+                min="1"
+                max="20"
+                disabled={!canSavePolicy}
+                darkMode={darkMode}
+              />
+              <PolicyNumberField
+                icon={FiClock}
+                label="Password Change Window (Days)"
+                helper="Days before password rotation is required."
+                value={policy.password_change_interval_days}
+                onChange={(value) => handlePolicyChange('password_change_interval_days', value)}
+                min="0"
+                max="365"
+                disabled={!canSavePolicy}
+                darkMode={darkMode}
+              />
+              <PolicyNumberField
+                icon={FiRefreshCw}
+                label="Password Reuse Window (Days)"
+                helper="Days before previous passwords can be reused."
+                value={policy.password_reuse_interval_days}
+                onChange={(value) => handlePolicyChange('password_reuse_interval_days', value)}
+                min="0"
+                max="365"
+                disabled={!canSavePolicy}
+                darkMode={darkMode}
+              />
+              <PolicyStaticField
+                icon={FiLock}
+                label="Account Suspension"
+                value="Automatic"
+                helper="Suspension is applied immediately when the failed-attempt limit is exceeded."
+                darkMode={darkMode}
+              />
             </div>
           </div>
         </div>
-      </div>
+
+        <aside className="space-y-5">
+          <div className={`rounded-xl border p-5 shadow-sm ${cardClass}`}>
+            <div className="flex items-start gap-3">
+              <FiShield className="mt-0.5 h-6 w-6 shrink-0 text-emerald-600" />
+              <div>
+                <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-950'}`}>Password Requirements</h2>
+                <p className={`mt-1 text-sm leading-6 ${mutedText}`}>These requirements help users create stronger passwords.</p>
+              </div>
+            </div>
+            <div className="mt-5 space-y-3">
+              {requirements.map((requirement) => (
+                <div key={requirement} className="flex items-center gap-3">
+                  <FiCheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
+                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>{requirement}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div
+            className={`rounded-xl border p-5 shadow-sm ${
+              darkMode ? 'border-emerald-900/60 bg-emerald-950/20' : 'border-emerald-200 bg-emerald-50'
+            }`}
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between xl:flex-col xl:items-start">
+              <div className="flex items-start gap-3">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+                  <FiShield className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className={`font-bold ${darkMode ? 'text-emerald-100' : 'text-emerald-900'}`}>Current Policy Status</h3>
+                  <p className={`mt-1 text-sm leading-6 ${darkMode ? 'text-emerald-100/80' : 'text-emerald-800'}`}>
+                    Password policy is active and enforced for all users.
+                  </p>
+                </div>
+              </div>
+              <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold ${darkMode ? 'bg-emerald-900 text-emerald-200' : 'bg-white text-emerald-800'}`}>
+                <FiCheckCircle className="h-4 w-4" />
+                Active
+              </span>
+            </div>
+          </div>
+
+          <div className={`rounded-xl border p-5 shadow-sm ${cardClass}`}>
+            <div className="flex items-start gap-3">
+              <FiInfo className={`mt-0.5 h-6 w-6 shrink-0 ${darkMode ? 'text-gray-300' : 'text-slate-600'}`} />
+              <div>
+                <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-950'}`}>Policy Impact</h2>
+                <p className={`mt-2 text-sm leading-6 ${mutedText}`}>
+                  Users are suspended after exceeding the failed-attempt threshold, required to rotate passwords after the change window, and prevented from reusing recent passwords within the reuse window.
+                </p>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
     </div>
   );
 };

@@ -598,47 +598,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Welcome Card - Matching starter kit style */}
-      <div className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-300'} rounded-xl shadow-card border`}>
-        <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-          <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Kick start your project development!</h2>
-        </div>
-        <div className="p-6">
-          <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-4`}>
-            Getting started with your project custom requirements using a ready template which is quite difficult and time taking process, 
-            Mofi Admin provides useful features to kick start your project development with no efforts!
-          </p>
-          <ul className="space-y-3">
-            <li className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-primary-600 text-sm">✓</span>
-              </div>
-              <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Mofi Admin provides you getting start pages with different layouts, use the layout as per your custom requirements 
-                and just change the branding, menu & content.
-              </p>
-            </li>
-            <li className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-success-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-success-600 text-sm">✓</span>
-              </div>
-              <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Every components in Mofi Admin are decoupled, it means use only components you actually need! 
-                Remove unnecessary and extra code easily just by excluding the path to specific SCSS, JS file.
-              </p>
-            </li>
-            <li className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-secondary-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-secondary-600 text-sm">✓</span>
-              </div>
-              <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Built with modern React and Tailwind CSS for maximum performance and beautiful design. 
-                Fully responsive and optimized for all devices.
-              </p>
-            </li>
-          </ul>
-        </div>
-      </div>
     </div>
   );
 };

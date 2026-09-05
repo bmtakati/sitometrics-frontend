@@ -124,6 +124,14 @@ const Header = ({ onMenuClick }) => {
     ? 'p-2 rounded-md text-gray-300 hover:bg-gray-800/80 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-offset-2 focus:ring-offset-gray-900'
     : 'p-2 rounded-md text-gray-600 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:ring-offset-white';
 
+  const dropdownItemClass = darkMode
+    ? 'text-gray-300 hover:bg-gray-800/80 hover:text-emerald-200'
+    : 'text-stone-600 hover:bg-emerald-50 hover:text-emerald-700';
+
+  const dropdownDangerItemClass = darkMode
+    ? 'text-danger-500 hover:bg-gray-800/80'
+    : 'text-danger-600 hover:bg-emerald-50';
+
   return (
     <>
     <header className={`sticky top-0 z-30 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-slate-50 border-slate-200'} border-b shadow-sm transition-colors duration-200`}>
@@ -274,16 +282,16 @@ const Header = ({ onMenuClick }) => {
                   <Link 
                     to="/profile" 
                     onClick={() => setShowProfile(false)}
-                    className={`w-full px-4 py-2 text-left ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-50 text-gray-700'} transition-colors flex items-center gap-3`}
+                    className={`w-full px-4 py-2 text-left ${dropdownItemClass} transition-colors flex items-center gap-3`}
                   >
                     <FiUser className="w-4 h-4" />
                     <span className="text-sm">Profile</span>
                   </Link>
-                  <button className={`w-full px-4 py-2 text-left ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-50 text-gray-700'} transition-colors flex items-center gap-3`}>
+                  <button className={`w-full px-4 py-2 text-left ${dropdownItemClass} transition-colors flex items-center gap-3`}>
                     <FiMail className="w-4 h-4" />
                     <span className="text-sm">Inbox</span>
                   </button>
-                  <button className={`w-full px-4 py-2 text-left ${darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-50 text-gray-700'} transition-colors flex items-center gap-3`}>
+                  <button className={`w-full px-4 py-2 text-left ${dropdownItemClass} transition-colors flex items-center gap-3`}>
                     <FiSettings className="w-4 h-4" />
                     <span className="text-sm">Settings</span>
                   </button>
@@ -291,7 +299,7 @@ const Header = ({ onMenuClick }) => {
                 <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'} pt-2`}>
                   <button 
                     onClick={handleLogout}
-                    className={`w-full px-4 py-2 text-left ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors flex items-center gap-3 text-danger-600`}
+                    className={`w-full px-4 py-2 text-left ${dropdownDangerItemClass} transition-colors flex items-center gap-3`}
                   >
                     <FiLogOut className="w-4 h-4" />
                     <span className="text-sm">Logout</span>
