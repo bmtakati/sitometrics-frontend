@@ -99,14 +99,14 @@ const Header = ({ onMenuClick }) => {
       setShowLogoutModal(true);
     } else {
       logout();
-      navigate('/landing');
+      navigate('/');
     }
   };
 
   const confirmLogout = () => {
     setShowLogoutModal(false);
     logout();
-    navigate('/landing');
+    navigate('/');
   };
 
   const fullName = user

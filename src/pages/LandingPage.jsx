@@ -465,7 +465,7 @@ const LandingPage = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [isAuthenticated, navigate]);
 
@@ -824,7 +824,7 @@ const LandingPage = () => {
           setShowLoginModal(false);
           setShowDashboardLoader(true);
           setTimeout(() => {
-            navigate(user.password_change_required ? '/profile?forcePasswordChange=1' : '/');
+            navigate(user.password_change_required ? '/profile?forcePasswordChange=1' : '/dashboard');
           }, 2000);
         } else {
           setLoginError('Login failed. Invalid response from server.');

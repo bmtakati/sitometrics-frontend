@@ -14,7 +14,7 @@ const LandingPageTest = () => {
           School Quality Assurance System
         </p>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/dashboard')}
           className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
         >
           Go to Dashboard

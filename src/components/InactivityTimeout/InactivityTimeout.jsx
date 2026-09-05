@@ -21,7 +21,7 @@ const InactivityTimeout = () => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
     if (countdownTimer.current) clearInterval(countdownTimer.current);
     logout();
-    navigate('/landing', { replace: true });
+    navigate('/', { replace: true });
   }, [logout, navigate]);
 
   const startCountdown = useCallback(() => {

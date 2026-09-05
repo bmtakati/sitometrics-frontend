@@ -20,7 +20,7 @@ export default function ResetPassword() {
   // Redirect if required params are missing
   useEffect(() => {
     if (!token || !email) {
-      navigate('/landing', { replace: true });
+      navigate('/', { replace: true });
     }
   }, [token, email, navigate]);
 
@@ -82,7 +82,7 @@ export default function ResetPassword() {
             Your password has been updated successfully. You can now sign in with your new password.
           </p>
           <button
-            onClick={() => navigate('/landing')}
+            onClick={() => navigate('/')}
             className="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors"
           >
             Back to Sign In
@@ -208,7 +208,7 @@ export default function ResetPassword() {
 
           <button
             type="button"
-            onClick={() => navigate('/landing')}
+            onClick={() => navigate('/')}
             className="w-full py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
           >
             Back to Sign In

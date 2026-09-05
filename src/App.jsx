@@ -110,7 +110,7 @@ const ProtectedRoute = ({ children }) => {
   if (!isAuthenticated) {
   }
   
-  return isAuthenticated ? children : <Navigate to="/landing" replace />;
+  return isAuthenticated ? children : <Navigate to="/" replace />;
 };
 
 function AppRoutes() {
@@ -142,14 +142,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="profile" element={<Profile />} />
-        <Route path="users/permissions" element={can('view-permissions') ? <Permissions /> : <Navigate to="/" replace />} />
-        <Route path="users/password-policy" element={can('view-password-policy') ? <PasswordPolicy /> : <Navigate to="/" replace />} />
-        <Route path="users/password-history" element={can('view-password-history') ? <PasswordHistory /> : <Navigate to="/" replace />} />
-        <Route path="users/roles" element={can('view-roles') ? <Roles /> : <Navigate to="/" replace />} />
-        <Route path="users/list" element={can('view-users') ? <UserList /> : <Navigate to="/" replace />} />
-        <Route path="users/role-handover" element={can('view-role-handovers') ? <RoleHandover /> : <Navigate to="/" replace />} />
+        <Route path="users/permissions" element={can('view-permissions') ? <Permissions /> : <Navigate to="/dashboard" replace />} />
+        <Route path="users/password-policy" element={can('view-password-policy') ? <PasswordPolicy /> : <Navigate to="/dashboard" replace />} />
+        <Route path="users/password-history" element={can('view-password-history') ? <PasswordHistory /> : <Navigate to="/dashboard" replace />} />
+        <Route path="users/roles" element={can('view-roles') ? <Roles /> : <Navigate to="/dashboard" replace />} />
+        <Route path="users/list" element={can('view-users') ? <UserList /> : <Navigate to="/dashboard" replace />} />
+        <Route path="users/role-handover" element={can('view-role-handovers') ? <RoleHandover /> : <Navigate to="/dashboard" replace />} />
         
         {/* Logs Routes */}
         <Route path="logs/audit-trail" element={<AuditTrail />} />
@@ -157,9 +157,9 @@ function AppRoutes() {
         <Route path="logs/failed-logins" element={<FailedLogins />} />
         
         {/* Reports Routes */}
-        <Route path="reports" element={can('view-reports') ? <ReportsList /> : <Navigate to="/" replace />} />
-        <Route path="reports/sales" element={can('view-reports') ? <SalesReport /> : <Navigate to="/" replace />} />
-        <Route path="reports/suppliers" element={can('view-reports') ? <SuppliersReport /> : <Navigate to="/" replace />} />
+        <Route path="reports" element={can('view-reports') ? <ReportsList /> : <Navigate to="/dashboard" replace />} />
+        <Route path="reports/sales" element={can('view-reports') ? <SalesReport /> : <Navigate to="/dashboard" replace />} />
+        <Route path="reports/suppliers" element={can('view-reports') ? <SuppliersReport /> : <Navigate to="/dashboard" replace />} />
         
         {/* Notifications Routes */}
         <Route path="notifications/all" element={<AllNotifications />} />
@@ -190,8 +190,8 @@ function AppRoutes() {
         <Route path="setup/item" element={<Item />} />
         <Route path="setup/unit" element={<Unit />} />
         <Route path="setup/currencies" element={<Currency />} />
-        <Route path="setup/payment-methods" element={can('manage-payment-methods') ? <PaymentMethod /> : <Navigate to="/" replace />} />
-        <Route path="setup/order-types" element={can('manage-order-types') ? <OrderType /> : <Navigate to="/" replace />} />
+        <Route path="setup/payment-methods" element={can('manage-payment-methods') ? <PaymentMethod /> : <Navigate to="/dashboard" replace />} />
+        <Route path="setup/order-types" element={can('manage-order-types') ? <OrderType /> : <Navigate to="/dashboard" replace />} />
         <Route path="setup/exchange-rates" element={<ExchangeRate />} />
         <Route path="setup/locales" element={<Locale />} />
         <Route path="setup/slideshow-slides" element={<SlideshowSlides />} />
@@ -201,11 +201,11 @@ function AppRoutes() {
         <Route path="setup/store" element={<Store />} />
         <Route
           path="procurement/purchase-requisitions"
-          element={can('view-purchase-requisitions') || can('manage-purchase-requisitions') ? <PurchaseRequisition /> : <Navigate to="/" replace />}
+          element={can('view-purchase-requisitions') || can('manage-purchase-requisitions') ? <PurchaseRequisition /> : <Navigate to="/dashboard" replace />}
         />
         <Route
           path="procurement/local-purchase-orders"
-          element={can('view-local-purchase-orders') || can('manage-local-purchase-orders') ? <LocalPurchaseOrder /> : <Navigate to="/" replace />}
+          element={can('view-local-purchase-orders') || can('manage-local-purchase-orders') ? <LocalPurchaseOrder /> : <Navigate to="/dashboard" replace />}
         />
         <Route path="procurement/goods-received-notes" element={<GoodsReceivedNote />} />
         <Route path="procurement/store-requests" element={<StoreRequest />} />
@@ -219,7 +219,7 @@ function AppRoutes() {
         <Route path="service/waiter-orders" element={<WaiterOrders />} />
         <Route path="service/kitchen-queue" element={<KitchenQueue />} />
         <Route path="service/bar-queue" element={<BarQueue />} />
-        <Route path="service/cashier" element={can('view-cashier-sales') ? <CashierSales /> : <Navigate to="/" replace />} />
+        <Route path="service/cashier" element={can('view-cashier-sales') ? <CashierSales /> : <Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>
     </Suspense>
@@ -233,7 +233,8 @@ function App() {
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/verify/:code" element={<DocumentVerify />} />
-            <Route path="/landing" element={<LandingPage />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/landing" element={<Navigate to="/" replace />} />
             <Route path="/landing-test" element={<LandingPageTest />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/*" element={<AppRoutes />} />

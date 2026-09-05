@@ -4,7 +4,7 @@ import { FiChevronRight, FiHome } from 'react-icons/fi';
 import useDarkMode from '../hooks/useDarkMode';
 
 const routeBreadcrumbs = {
-  '/': ['Dashboard'],
+  '/dashboard': ['Dashboard'],
   '/profile': ['Profile'],
 
   '/users/permissions': ['Access Control', 'Permissions'],
@@ -102,7 +102,7 @@ const Breadcrumb = () => {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/';
   const breadcrumbs = getBreadcrumbs(pathname);
 
-  if (normalizedPath === '/' || !breadcrumbs.length) {
+  if (normalizedPath === '/dashboard' || !breadcrumbs.length) {
     return null;
   }
 
@@ -114,7 +114,7 @@ const Breadcrumb = () => {
     <nav aria-label="Breadcrumb" className="mb-3 flex justify-end overflow-x-auto">
       <ol className="flex min-w-max items-center justify-end gap-1.5 whitespace-nowrap text-xs font-medium leading-5">
         <li className="flex items-center">
-          <Link to="/" className={`inline-flex items-center gap-0.5 transition-colors ${textClass} ${linkClass}`}>
+          <Link to="/dashboard" className={`inline-flex items-center gap-0.5 transition-colors ${textClass} ${linkClass}`}>
             <FiHome className="h-3.5 w-3.5" />
             <span>Dashboard</span>
           </Link>

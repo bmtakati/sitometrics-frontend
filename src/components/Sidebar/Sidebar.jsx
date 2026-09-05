@@ -124,7 +124,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
       id: 'dashboard',
       label: 'Dashboard',
       icon: FiGrid,
-      path: '/',
+      path: '/dashboard',
       color: 'text-primary-600',
       bgColor: 'bg-green-50',
       pinned: true
