@@ -111,8 +111,8 @@ const Breadcrumb = () => {
   const linkClass = darkMode ? 'hover:text-emerald-300' : 'hover:text-emerald-700';
 
   return (
-    <nav aria-label="Breadcrumb" className="mb-3 overflow-x-auto">
-      <ol className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-xs font-medium leading-5">
+    <nav aria-label="Breadcrumb" className="mb-3 flex justify-end overflow-x-auto">
+      <ol className="flex min-w-max items-center justify-end gap-1.5 whitespace-nowrap text-xs font-medium leading-5">
         <li className="flex items-center">
           <Link to="/" className={`inline-flex items-center gap-0.5 transition-colors ${textClass} ${linkClass}`}>
             <FiHome className="h-3.5 w-3.5" />
