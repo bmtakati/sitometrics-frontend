@@ -99,9 +99,10 @@ const getBreadcrumbs = (pathname) => {
 const Breadcrumb = () => {
   const { pathname } = useLocation();
   const darkMode = useDarkMode();
+  const normalizedPath = pathname.replace(/\/+$/, '') || '/';
   const breadcrumbs = getBreadcrumbs(pathname);
 
-  if (!breadcrumbs.length) {
+  if (normalizedPath === '/' || !breadcrumbs.length) {
     return null;
   }
 
@@ -110,11 +111,11 @@ const Breadcrumb = () => {
   const linkClass = darkMode ? 'hover:text-emerald-300' : 'hover:text-emerald-700';
 
   return (
-    <nav aria-label="Breadcrumb" className="overflow-x-auto">
-      <ol className="flex min-w-0 items-center gap-1 whitespace-nowrap text-[11px] font-medium leading-4">
+    <nav aria-label="Breadcrumb" className="mb-3 overflow-x-auto">
+      <ol className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-xs font-medium leading-5">
         <li className="flex items-center">
           <Link to="/" className={`inline-flex items-center gap-0.5 transition-colors ${textClass} ${linkClass}`}>
-            <FiHome className="h-3 w-3" />
+            <FiHome className="h-3.5 w-3.5" />
             <span>Dashboard</span>
           </Link>
         </li>
@@ -124,7 +125,7 @@ const Breadcrumb = () => {
               const isLast = index === breadcrumbs.length - 1;
               return (
                 <li key={`${label}-${index}`} className="flex items-center gap-1">
-                  <FiChevronRight className={`h-3 w-3 shrink-0 ${textClass}`} />
+                  <FiChevronRight className={`h-3.5 w-3.5 shrink-0 ${textClass}`} />
                   <span className={`truncate ${isLast ? activeClass : textClass}`}>
                     {label}
                   </span>

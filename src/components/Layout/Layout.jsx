@@ -39,7 +39,7 @@ const Layout = () => {
         <Header onMenuClick={toggleSidebar} />
 
         {/* Page Content */}
-        <main className={`flex-1 overflow-y-auto overscroll-contain ${darkMode ? 'bg-gray-950' : 'bg-white'} px-3 py-4 sm:px-5 lg:p-6`}>
+        <main className={`flex-1 overflow-y-auto overscroll-contain ${darkMode ? 'bg-gray-950' : 'bg-white'} px-3 pb-4 pt-2 sm:px-5 sm:pb-5 sm:pt-3 lg:px-6 lg:pb-6 lg:pt-4`}>
           <div className="mx-auto w-full max-w-[1600px] min-w-0">
             <Breadcrumb />
             <Outlet />
