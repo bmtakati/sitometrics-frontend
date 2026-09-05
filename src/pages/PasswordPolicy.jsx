@@ -4,12 +4,10 @@ import {
   FiCheckCircle,
   FiClock,
   FiInfo,
-  FiKey,
   FiLock,
   FiRefreshCw,
   FiSave,
   FiShield,
-  FiUserX,
 } from 'react-icons/fi';
 import { API_BASE_URL, useAuth } from '../context/AuthContext';
 import { hasPermission } from '../utils/permissions';
@@ -57,7 +55,6 @@ const Switch = ({ checked, onChange, disabled = false, darkMode = false }) => (
 );
 
 const PolicyNumberField = ({
-  icon: Icon,
   label,
   helper,
   value,
@@ -66,49 +63,52 @@ const PolicyNumberField = ({
   min,
   max,
   darkMode,
-  readOnly = false,
 }) => (
-  <div className="flex gap-3">
-    <Icon className={`mt-1 h-5 w-5 shrink-0 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`} />
-    <div className="min-w-0 flex-1">
-      <label className={`text-sm font-semibold ${darkMode ? 'text-gray-100' : 'text-slate-900'}`}>{label}</label>
+  <div className="min-w-0">
+    <div className="relative">
       <input
         type="number"
         min={min}
         max={max}
         disabled={disabled}
-        readOnly={readOnly}
         value={value}
+        placeholder=" "
         onChange={(event) => onChange?.(event.target.value)}
-        className={`mt-2 w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-70 ${
-          readOnly ? 'cursor-default' : ''
-        } ${
+        className={`peer w-full rounded-lg border px-3 pb-2.5 pt-5 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-70 ${
           darkMode
-            ? 'border-gray-700 bg-gray-800 text-white'
+            ? 'border-stone-700 bg-stone-800 text-white'
             : 'border-stone-300 bg-white text-slate-950'
         }`}
       />
-      <p className={`mt-2 text-xs leading-5 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>{helper}</p>
+      <label
+        className={`pointer-events-none absolute left-3 top-2 text-xs font-medium transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-emerald-600 ${
+          darkMode ? 'text-gray-400 peer-placeholder-shown:text-gray-500' : 'text-slate-500 peer-placeholder-shown:text-slate-500'
+        }`}
+      >
+        {label}
+      </label>
     </div>
+    <p className={`mt-2 text-xs leading-5 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>{helper}</p>
   </div>
 );
 
-const PolicyStaticField = ({ icon: Icon, label, value, helper, darkMode }) => (
-  <div className="flex gap-3">
-    <Icon className={`mt-1 h-5 w-5 shrink-0 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`} />
-    <div className="min-w-0 flex-1">
-      <p className={`text-sm font-semibold ${darkMode ? 'text-gray-100' : 'text-slate-900'}`}>{label}</p>
+const PolicyStaticField = ({ label, value, helper, darkMode }) => (
+  <div className="min-w-0">
+    <div className="relative">
       <div
-        className={`mt-2 rounded-lg border px-3 py-2.5 text-sm font-medium ${
+        className={`rounded-lg border px-3 pb-2.5 pt-5 text-sm font-medium ${
           darkMode
-            ? 'border-gray-700 bg-gray-800 text-gray-200'
+            ? 'border-stone-700 bg-stone-800 text-gray-200'
             : 'border-stone-300 bg-stone-50 text-slate-800'
         }`}
       >
         {value}
       </div>
-      <p className={`mt-2 text-xs leading-5 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>{helper}</p>
+      <span className={`pointer-events-none absolute left-3 top-2 text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>
+        {label}
+      </span>
     </div>
+    <p className={`mt-2 text-xs leading-5 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}>{helper}</p>
   </div>
 );
 
@@ -290,12 +290,9 @@ const PasswordPolicy = () => {
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className={`rounded-2xl border shadow-sm ${cardClass}`}>
           <div className={`border-b p-5 ${darkMode ? 'border-stone-700/80' : 'border-stone-200'}`}>
-            <div className="flex min-w-0 items-start gap-3">
-              <FiShield className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-              <div>
-                <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-slate-950'}`}>Security Policy Configuration</h2>
-                <p className={`mt-1 text-sm ${mutedText}`}>Set the rules and restrictions for password usage in your organization.</p>
-              </div>
+            <div>
+              <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-slate-950'}`}>Security Policy Configuration</h2>
+              <p className={`mt-1 text-sm ${mutedText}`}>Set the rules and restrictions for password usage in your organization.</p>
             </div>
           </div>
 
@@ -306,20 +303,11 @@ const PasswordPolicy = () => {
               }`}
             >
               <div className="flex items-center justify-between gap-4">
-                <div className="flex min-w-0 items-start gap-3">
-                  <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                      darkMode ? 'bg-stone-900 text-emerald-300' : 'bg-white text-emerald-700'
-                    }`}
-                  >
-                    <FiKey className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-950'}`}>Enable Password History</h3>
-                    <p className={`mt-1 text-sm leading-6 ${mutedText}`}>
-                      When enabled, users cannot reuse a password during the configured reuse window.
-                    </p>
-                  </div>
+                <div className="min-w-0">
+                  <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-950'}`}>Enable Password History</h3>
+                  <p className={`mt-1 text-sm leading-6 ${mutedText}`}>
+                    When enabled, users cannot reuse a password during the configured reuse window.
+                  </p>
                 </div>
                 {canEnablePasswordHistory && (
                   <Switch
@@ -334,7 +322,6 @@ const PasswordPolicy = () => {
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <PolicyNumberField
-                icon={FiUserX}
                 label="Failed Login Attempts"
                 helper="Number of failed attempts before account suspension."
                 value={policy.max_failed_login_attempts}
@@ -345,7 +332,6 @@ const PasswordPolicy = () => {
                 darkMode={darkMode}
               />
               <PolicyNumberField
-                icon={FiClock}
                 label="Password Change Window (Days)"
                 helper="Days before password rotation is required."
                 value={policy.password_change_interval_days}
@@ -356,7 +342,6 @@ const PasswordPolicy = () => {
                 darkMode={darkMode}
               />
               <PolicyNumberField
-                icon={FiRefreshCw}
                 label="Password Reuse Window (Days)"
                 helper="Days before previous passwords can be reused."
                 value={policy.password_reuse_interval_days}
@@ -367,7 +352,6 @@ const PasswordPolicy = () => {
                 darkMode={darkMode}
               />
               <PolicyStaticField
-                icon={FiLock}
                 label="Account Suspension"
                 value="Automatic"
                 helper="Suspension is applied immediately when the failed-attempt limit is exceeded."
