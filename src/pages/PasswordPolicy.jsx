@@ -231,6 +231,10 @@ const PasswordPolicy = () => {
     ? 'border-stone-700/80 bg-stone-900/70 shadow-black/20'
     : 'border-stone-200/90 bg-white shadow-stone-200/70';
 
+  const impactCardClass = darkMode
+    ? 'border-stone-700/80 bg-stone-800/60 shadow-black/20'
+    : 'border-stone-200 bg-stone-50 shadow-stone-200/70';
+
   const mutedText = darkMode ? 'text-gray-400' : 'text-slate-500';
 
   return (
@@ -239,14 +243,7 @@ const PasswordPolicy = () => {
         icon={FiLock}
         title="Password Policy"
         subtitle="Configure password security rules that govern password reuse, rotation, and account suspension."
-        actions={canSavePolicy ? [
-          {
-            label: saving ? 'Saving...' : 'Save Policy',
-            icon: saving ? FiRefreshCw : FiSave,
-            onClick: handleSave,
-            disabled: loading || saving,
-          },
-        ] : []}
+        actions={[]}
       />
 
       <StatsCards
@@ -358,11 +355,25 @@ const PasswordPolicy = () => {
                 darkMode={darkMode}
               />
             </div>
+
+            {canSavePolicy && (
+              <div className={`flex justify-end border-t pt-5 ${darkMode ? 'border-stone-700/80' : 'border-stone-200'}`}>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={loading || saving}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-emerald-600/20 transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                >
+                  {saving ? <FiRefreshCw className="h-4 w-4 animate-spin" /> : <FiSave className="h-4 w-4" />}
+                  {saving ? 'Saving...' : 'Save Policy'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         <aside className="space-y-5">
-          <div className={`rounded-2xl border p-5 shadow-sm ${cardClass}`}>
+          <div className={`rounded-2xl border p-5 shadow-sm ${impactCardClass}`}>
             <div className="flex items-start gap-3">
               <FiShield className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
               <div>
