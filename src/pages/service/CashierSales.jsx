@@ -16,11 +16,11 @@ import { hasPermission } from '../../utils/permissions';
 import { API_BASE_URL } from '../../context/AuthContext';
 import apiFetch from '../../utils/apiFetch';
 import {
-  downloadPaymentReceipt,
   fetchCashierSales,
   fetchPaymentMethods,
   receivePayment,
 } from '../../utils/cashierApi';
+import { thermalPrintBill } from '../../utils/thermalPrintApi';
 
 const todayInputValue = () => {
   const date = new Date();
@@ -121,7 +121,12 @@ const CashierSales = () => {
       await reload();
       showQuickSuccess(`Payment received${updated.receipt_no ? ` · Receipt ${updated.receipt_no}` : ''}`);
       if (updated.receipt_no) {
-        await downloadPaymentReceipt(updated.id, updated.receipt_no);
+        try {
+          const printResult = await thermalPrintBill(updated.id);
+          showQuickSuccess(printResult?.message || 'Bill sent to thermal printer');
+        } catch (printError) {
+          showQuickError('Payment saved, but thermal print failed', printError.message);
+        }
       }
     } catch (error) {
       showQuickError('Payment failed', error.message);
@@ -130,7 +135,8 @@ const CashierSales = () => {
 
   const handlePrintReceipt = async (order) => {
     try {
-      await downloadPaymentReceipt(order.id, order.receipt_no || order.order_no || order.code);
+      const result = await thermalPrintBill(order.id);
+      showQuickSuccess(result?.message || 'Bill sent to thermal printer');
     } catch (error) {
       showQuickError('Print failed', error.message);
     }

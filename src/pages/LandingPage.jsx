@@ -838,9 +838,9 @@ const LandingPage = () => {
       }
     } catch (error) {
       if (error.name === 'AbortError') {
-        setLoginError('Request timeout. Backend is not responding. Please check if it\'s running.');
+        setLoginError('Sign-in is taking too long. Please try again in a moment.');
       } else {
-        setLoginError(`Network error: ${error.message}. Check if backend is running at ${API_URL}`);
+        setLoginError('Unable to sign in right now. Please check your connection and try again.');
       }
       setLoginLoading(false);
     }

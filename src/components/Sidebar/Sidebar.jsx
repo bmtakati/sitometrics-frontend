@@ -62,7 +62,8 @@ import {
   FiSend,
   FiCoffee,
   FiTruck,
-  FiImage
+  FiImage,
+  FiPrinter,
 } from 'react-icons/fi';
 import SitometricsLogo from '../SitometricsLogo';
 import { useAuth } from '../../context/AuthContext';
@@ -177,6 +178,7 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
         { id: 'kitchen-queue', label: 'Kitchen Queue', path: '/service/kitchen-queue', icon: FiCoffee, color: 'text-orange-600' },
         { id: 'bar-queue', label: 'Bar Queue', path: '/service/bar-queue', icon: FiDroplet, color: 'text-cyan-600' },
         ...(hasPerm('view-cashier-sales') ? [{ id: 'cashier', label: 'Cashier Sales', path: '/service/cashier', icon: FiDollarSign, color: 'text-green-600' }] : []),
+        ...(hasPerm('print-waiter-orders') ? [{ id: 'print-jobs', label: 'Print Jobs', path: '/service/print-jobs', icon: FiPrinter, color: 'text-stone-600' }] : []),
       ]
     },
     {

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FiCoffee, FiTrendingUp, FiAlertCircle, FiTrash2, FiCheck, FiInfo, FiGrid } from 'react-icons/fi';
+import { FiCoffee, FiTrendingUp, FiAlertCircle, FiTrash2, FiCheck, FiInfo, FiGrid, FiPrinter } from 'react-icons/fi';
 import useApiCrud from '../../hooks/useApiCrud';
 import CRUDPage from '../../components/CRUDPage/CRUDPage';
 import OutletTablesEditor from '../../components/OutletTablesEditor';
@@ -21,6 +21,11 @@ const patchOutletRow = (row) => ({
   ...row,
   hotel_id: row.hotel_id != null ? String(row.hotel_id) : '',
   store_id: row.store_id != null ? String(row.store_id) : '',
+  printer_connection: row.printer_connection || 'network',
+  printer_host: row.printer_host || '',
+  printer_port: row.printer_port != null ? String(row.printer_port) : '9100',
+  uses_pos: Boolean(row.uses_pos),
+  print_via_agent: row.print_via_agent !== false,
   tables: (row.tables || []).map((table) => ({
     id: table.id,
     table_number: table.table_number || '',
@@ -91,6 +96,11 @@ const Outlet = () => {
       type: 'RESTAURANT',
       store_id: '',
       description: '',
+      uses_pos: false,
+      printer_connection: 'network',
+      printer_host: '',
+      printer_port: '9100',
+      print_via_agent: true,
       status_id: '',
       tables: [{ table_number: '', name: '', zone: '', seat_numbers: ['1', '2'] }],
     },
@@ -100,6 +110,12 @@ const Outlet = () => {
       if (!data.name?.trim()) errors.name = 'Outlet name is required';
       if (!data.type) errors.type = 'Outlet type is required';
       if (!data.status_id) errors.status_id = 'Please select a status';
+      if (data.printer_connection === 'network' && data.printer_port !== '' && data.printer_port != null) {
+        const port = Number(data.printer_port);
+        if (!Number.isInteger(port) || port < 1 || port > 65535) {
+          errors.printer_port = 'Printer port must be between 1 and 65535';
+        }
+      }
 
       const numberedTables = (data.tables || []).filter((row) => row.table_number?.trim());
       const numbers = numberedTables.map((row) => row.table_number.trim().toLowerCase());
@@ -116,6 +132,16 @@ const Outlet = () => {
         type: data.type,
         store_id: data.store_id ? Number(data.store_id) : null,
         description: data.description?.trim() || null,
+        uses_pos: Boolean(data.uses_pos),
+        printer_connection: data.printer_connection || 'network',
+        printer_host: data.printer_host?.trim() || null,
+        print_via_agent: data.print_via_agent !== false,
+        printer_port:
+          data.printer_connection === 'windows'
+            ? null
+            : data.printer_port === '' || data.printer_port == null
+              ? 9100
+              : Number(data.printer_port),
         status_id: Number(data.status_id),
       };
 
@@ -227,6 +253,51 @@ const Outlet = () => {
           },
           { name: 'status_id', label: 'Status', type: 'status_id', required: true },
           { name: 'description', label: 'Description', type: 'textarea', rows: 3, required: false },
+          {
+            name: 'uses_pos',
+            label: 'POS / touch station outlet',
+            type: 'checkbox',
+            required: false,
+          },
+        ],
+      },
+      {
+        id: 'printer',
+        label: 'Thermal Printer',
+        icon: FiPrinter,
+        fields: [
+          {
+            name: 'printer_connection',
+            label: 'Connection type',
+            type: 'select',
+            required: false,
+            options: [
+              { value: 'network', label: 'Network (IP + port 9100)' },
+              { value: 'windows', label: 'Windows printer share / USB name' },
+            ],
+          },
+          {
+            name: 'printer_host',
+            label: 'Printer IP or Windows printer name',
+            type: 'text',
+            required: false,
+            placeholder: '192.168.0.103  or  POS-80',
+          },
+          {
+            name: 'printer_port',
+            label: 'Network port (network mode only)',
+            type: 'number',
+            required: false,
+            min: 1,
+            max: 65535,
+            placeholder: '9100',
+          },
+          {
+            name: 'print_via_agent',
+            label: 'Print via local agent (required when API is in the cloud)',
+            type: 'checkbox',
+            required: false,
+          },
         ],
       },
       {
@@ -278,6 +349,27 @@ const Outlet = () => {
           valueRender: (item) => item.store?.name || '—',
         },
         { label: 'Description', accessor: 'description', fullWidth: true },
+        {
+          label: 'POS / touch station',
+          accessor: 'uses_pos',
+          valueRender: (item) => (item.uses_pos ? 'Yes' : 'No'),
+        },
+        {
+          label: 'Printer',
+          accessor: 'printer_host',
+          valueRender: (item) => {
+            if (!item.printer_host) return '—';
+            if (item.printer_connection === 'windows') {
+              return `Windows · ${item.printer_host}`;
+            }
+            return `Network · ${item.printer_host}:${item.printer_port || 9100}`;
+          },
+        },
+        {
+          label: 'Print via local agent',
+          accessor: 'print_via_agent',
+          valueRender: (item) => (item.print_via_agent !== false ? 'Yes' : 'No (direct from server)'),
+        },
         {
           label: 'Tables',
           accessor: 'tables_count',

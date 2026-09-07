@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiBell, FiCheck, FiCoffee, FiFileText, FiLock, FiTrash2, FiX } from 'react-icons/fi';
+import { FiBell, FiCheck, FiCoffee, FiFileText, FiLock, FiMaximize, FiRefreshCw, FiTrash2, FiX } from 'react-icons/fi';
 import {
   showQuickError,
   showQuickSuccess,
@@ -9,10 +9,14 @@ import SearchableSelect from '../../components/SearchableSelect';
 import PageHeader from '../../components/PageHeader';
 import SignaturePad from '../../components/service/SignaturePad';
 import OrderStatusPill from '../../components/service/OrderStatusPill';
+import ActiveOrdersList from '../../components/service/ActiveOrdersList';
+import NewOrderForm from '../../components/service/NewOrderForm';
 import WaiterOrdersSidebar from '../../components/service/WaiterOrdersSidebar';
+import WaiterPosShell from '../../components/service/WaiterPosShell';
 import { canCancelOpenOrder, canCloseOrder } from '../../components/service/orderStatusStyles';
 import useOrderNotifications from '../../hooks/useOrderNotifications';
 import { useAuth } from '../../context/AuthContext';
+import { usePosMode } from '../../context/PosModeContext';
 import { formatMoney } from '../../utils/formatMoney';
 import { hasPermission } from '../../utils/permissions';
 import { API_BASE_URL } from '../../context/AuthContext';
@@ -24,7 +28,6 @@ import {
   closeOrder,
   canPrintWaiterOrder,
   createOrder,
-  downloadOrderPdf,
   fetchActiveOrders,
   fetchAvailableTables,
   fetchOrder,
@@ -35,6 +38,7 @@ import {
   submitOrder,
   updateOrderDetails,
 } from '../../utils/waiterOrderApi';
+import { thermalPrintOrder } from '../../utils/thermalPrintApi';
 
 const parseSeatList = (value) =>
   String(value || '')
@@ -44,6 +48,7 @@ const parseSeatList = (value) =>
 
 const WaiterOrders = () => {
   const { user } = useAuth();
+  const { posMode, setPosMode, enterFullscreen } = usePosMode();
   const canApproveComplementary = hasPermission(user, 'approve-complementary-orders');
   const [outlets, setOutlets] = useState([]);
   const [orderTypes, setOrderTypes] = useState([]);
@@ -69,8 +74,40 @@ const WaiterOrders = () => {
   const [guestSignature, setGuestSignature] = useState(null);
   const [pendingComplementary, setPendingComplementary] = useState([]);
   const [expandedPanel, setExpandedPanel] = useState('active');
+  const [posTab, setPosTab] = useState('orders');
+  /** null = auto from outlet/device; true/false = user override */
+  const [posOverride, setPosOverride] = useState(null);
+  const [deviceSuggestsPos, setDeviceSuggestsPos] = useState(false);
 
   const { notifications, markRead, unreadCount, refresh: refreshNotifications } = useOrderNotifications('WAITER');
+
+  useEffect(() => {
+    const checkDevice = () => {
+      const coarse = window.matchMedia('(pointer: coarse)').matches;
+      const narrow = window.innerWidth < 1024;
+      setDeviceSuggestsPos(coarse || narrow);
+    };
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
+
+  const selectedOutlet = useMemo(
+    () => outlets.find((row) => String(row.id) === String(outletId)),
+    [outlets, outletId]
+  );
+
+  const autoPos = Boolean(selectedOutlet?.uses_pos) || deviceSuggestsPos;
+  const wantPos = posOverride !== null ? posOverride : autoPos;
+
+  useEffect(() => {
+    setPosMode(wantPos);
+    return () => setPosMode(false);
+  }, [wantPos, setPosMode]);
+
+  useEffect(() => {
+    setPosOverride(null);
+  }, [outletId]);
 
   const selectedOrderType = useMemo(
     () => orderTypes.find((row) => String(row.id) === String(orderTypeId)),
@@ -208,6 +245,7 @@ const WaiterOrders = () => {
   const handleSelectOrder = (order) => {
     setSelectedOrder(order);
     setExpandedPanel('active');
+    setPosTab('detail');
   };
 
   const toggleSeat = (seatNumber) => {
@@ -245,6 +283,7 @@ const WaiterOrders = () => {
       setRoomNumber('');
       setGuestSignature(null);
       setExpandedPanel('active');
+      setPosTab('detail');
       await reloadOrders();
       await reloadPendingComplementary();
       if (outletId) fetchAvailableTables(outletId).then(setTables);
@@ -363,7 +402,8 @@ const WaiterOrders = () => {
   const handlePrint = async () => {
     if (!selectedOrder?.id) return;
     try {
-      await downloadOrderPdf(selectedOrder.id, selectedOrder.order_no || selectedOrder.code);
+      const result = await thermalPrintOrder(selectedOrder.id);
+      showQuickSuccess(result?.message || 'Thermal print job queued');
     } catch (error) {
       showQuickError('Print failed', error.message);
     }
@@ -395,27 +435,27 @@ const WaiterOrders = () => {
     onCreateOrder: handleCreateOrder,
   };
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        icon={FiCoffee}
-        title="Waiter Orders"
-        subtitle="Create guest orders, route food to kitchen and beverages to bar"
-        actions={[
-          {
-            label: unreadCount ? `Alerts (${unreadCount})` : 'Alerts',
-            icon: FiBell,
-            onClick: refreshNotifications,
-          },
-        ]}
-      />
+  const touch = posMode;
+  const btnBase = touch
+    ? 'min-h-12 rounded-xl px-4 py-3 text-base font-semibold'
+    : 'rounded-lg px-3 py-2 text-sm';
+  const fieldClass = touch
+    ? 'w-full rounded-xl border px-4 py-3 text-base dark:border-stone-600 dark:bg-stone-800'
+    : 'w-full rounded-lg border px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-800';
 
+  const alertsPanel = (
+    <>
       {pendingComplementary.length > 0 ? (
         <div className="rounded-xl border border-violet-300 bg-violet-50 p-4 dark:border-violet-700 dark:bg-violet-950/30">
-          <p className="mb-2 text-sm font-semibold text-violet-900 dark:text-violet-200">Complementary orders awaiting approval</p>
+          <p className="mb-2 text-sm font-semibold text-violet-900 dark:text-violet-200">
+            Complementary orders awaiting approval
+          </p>
           <div className="space-y-2">
             {pendingComplementary.map((order) => (
-              <div key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white/80 px-3 py-2 text-sm dark:bg-stone-900/60">
+              <div
+                key={order.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white/80 px-3 py-2 text-sm dark:bg-stone-900/60"
+              >
                 <div>
                   <span className="font-semibold">{order.order_no || order.code}</span>
                   <span className="ml-2 text-stone-500">
@@ -426,14 +466,14 @@ const WaiterOrders = () => {
                   <button
                     type="button"
                     onClick={() => handleComplementaryDecision(order.id, true)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white"
+                    className={`inline-flex items-center gap-1 bg-emerald-600 text-white ${btnBase}`}
                   >
                     <FiCheck /> Approve
                   </button>
                   <button
                     type="button"
                     onClick={() => handleComplementaryDecision(order.id, false)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-red-300 px-3 py-1.5 text-xs text-red-600"
+                    className={`inline-flex items-center gap-1 border border-red-300 text-red-600 ${btnBase}`}
                   >
                     <FiX /> Reject
                   </button>
@@ -454,7 +494,7 @@ const WaiterOrders = () => {
                 <button
                   type="button"
                   onClick={() => markRead(note.id)}
-                  className="rounded-lg bg-amber-600 px-3 py-1 text-xs font-medium text-white"
+                  className={`bg-amber-600 font-medium text-white ${btnBase}`}
                 >
                   Dismiss
                 </button>
@@ -463,6 +503,448 @@ const WaiterOrders = () => {
           </div>
         </div>
       ) : null}
+    </>
+  );
+
+  const orderDetailPanel = !selectedOrder ? (
+    <p className="text-sm text-stone-500">Select or create an order to start adding items.</p>
+  ) : (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className={touch ? 'text-2xl font-bold' : 'text-xl font-bold'}>
+              {selectedOrder.order_no || selectedOrder.code}
+            </h2>
+            <OrderStatusPill status={selectedOrder.workflow_status} />
+            {selectedOrder.preparation_locked ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
+                <FiLock className="h-3 w-3" /> Kitchen/bar preparing
+              </span>
+            ) : null}
+            {selectedOrder.is_complementary ? (
+              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-800">
+                Complementary
+                {selectedOrder.complementary_status === 'PENDING' ? ' · Pending approval' : ''}
+                {selectedOrder.complementary_status === 'APPROVED' ? ' · Approved' : ''}
+              </span>
+            ) : null}
+          </div>
+          <p className="text-sm text-stone-500">
+            Ref {selectedOrder.code} · {selectedOrder.outlet?.name} · Table {selectedOrder.table?.table_number || '—'} · Waiter{' '}
+            {selectedOrder.waiter?.full_name || '—'}
+            {activeSelectedOrderType ? ` · ${activeSelectedOrderType.name}` : ''}
+            {selectedOrder.room_number ? ` · Room ${selectedOrder.room_number}` : ''}
+          </p>
+        </div>
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          {orderHasItems && canPrintWaiterOrder(selectedOrder) ? (
+            <button type="button" onClick={handlePrint} className={`border ${btnBase} flex-1 sm:flex-none`}>
+              <FiFileText className="inline" /> Print order
+            </button>
+          ) : null}
+          {selectedOrder.workflow_status === 'DRAFT' ? (
+            <>
+              {orderHasItems ? (
+                <button
+                  type="button"
+                  disabled={loading || (selectedOrder.is_complementary && selectedOrder.complementary_status !== 'APPROVED')}
+                  title={
+                    selectedOrder.is_complementary && selectedOrder.complementary_status !== 'APPROVED'
+                      ? 'Complementary orders need hotel manager approval before submitting'
+                      : 'Submit to kitchen/bar'
+                  }
+                  onClick={() => runAction('Order submitted', () => submitOrder(selectedOrder.id))}
+                  className={`flex-1 bg-blue-600 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none ${btnBase}`}
+                >
+                  Submit to kitchen/bar
+                </button>
+              ) : null}
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => runAction('Order cancelled', () => cancelOrder(selectedOrder.id))}
+                className={`flex-1 border border-red-300 text-red-600 sm:flex-none ${btnBase}`}
+              >
+                Cancel
+              </button>
+            </>
+          ) : null}
+          {selectedOrder.workflow_status === 'OPEN' ? (
+            <>
+              <button
+                type="button"
+                disabled={loading || closeDisabled}
+                title={closeDisabled ? 'Receive all items before closing' : 'Close order'}
+                onClick={() => runAction('Order closed', () => closeOrder(selectedOrder.id))}
+                className={`flex-1 bg-emerald-600 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none ${btnBase}`}
+              >
+                Close order
+              </button>
+              <button
+                type="button"
+                disabled={loading || cancelOpenDisabled}
+                title={
+                  selectedOrder.preparation_locked
+                    ? 'Order is locked while kitchen or bar is preparing'
+                    : cancelOpenDisabled
+                      ? 'Receive all items before cancelling'
+                      : 'Cancel order'
+                }
+                onClick={() => runAction('Order cancelled', () => cancelOrder(selectedOrder.id))}
+                className={`flex-1 border border-red-300 text-red-600 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none ${btnBase}`}
+              >
+                Cancel
+              </button>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      {selectedOrder.workflow_status === 'DRAFT' ? (
+        <div className="space-y-3 rounded-xl border border-stone-200 p-3 dark:border-stone-700">
+          <p className="text-sm font-medium">Order details</p>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Order type</label>
+            <SearchableSelect options={orderTypeOptions} value={orderTypeId} onChange={setOrderTypeId} placeholder="Select order type…" />
+          </div>
+          <label className="flex min-h-11 items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={isComplementary}
+              onChange={(e) => setIsComplementary(e.target.checked)}
+              className="h-5 w-5"
+            />
+            Complementary order
+          </label>
+          {editingOrderType?.requires_room_number ? (
+            <div>
+              <label className="mb-1 block text-sm font-medium">Room number</label>
+              <input
+                type="text"
+                value={roomNumber}
+                onChange={(e) => setRoomNumber(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+          ) : null}
+          {editingOrderType?.requires_guest_signature ? (
+            <div>
+              <label className="mb-1 block text-sm font-medium">Guest signature</label>
+              <SignaturePad value={guestSignature} onChange={setGuestSignature} />
+            </div>
+          ) : null}
+          <button type="button" onClick={handleSaveDetails} className={`border ${btnBase}`}>
+            Save order details
+          </button>
+        </div>
+      ) : null}
+
+      <div className="rounded-xl border border-stone-200 p-3 dark:border-stone-700">
+        <label className="mb-1 block text-sm font-medium">Order note</label>
+        <textarea
+          value={orderRemarks}
+          onChange={(e) => setOrderRemarks(e.target.value)}
+          onBlur={handleSaveRemarks}
+          rows={touch ? 3 : 2}
+          disabled={!['DRAFT', 'OPEN'].includes(selectedOrder.workflow_status)}
+          placeholder="General comments for this order…"
+          className={fieldClass}
+        />
+      </div>
+
+      {canModifyItems ? (
+        <div className="space-y-3 rounded-xl border border-stone-200 p-3 dark:border-stone-700">
+          <p className="text-sm font-medium">
+            {selectedOrder.workflow_status === 'OPEN' ? 'Add more items (sent immediately)' : 'Add items'}
+          </p>
+          <div className={`grid gap-3 ${touch ? 'grid-cols-1' : 'md:grid-cols-[140px_1fr_90px_auto]'}`}>
+            <select
+              value={lineType}
+              onChange={(e) => {
+                setLineType(e.target.value);
+                setCatalogId('');
+              }}
+              className={fieldClass}
+            >
+              <option value="MENU">Menu</option>
+              <option value="FOOD">Food item</option>
+              <option value="BEVERAGE">Beverage</option>
+            </select>
+            <SearchableSelect options={catalogOptions} value={catalogId} onChange={setCatalogId} placeholder="Select item…" />
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              className={fieldClass}
+            />
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handleAddItem}
+              className={`bg-emerald-600 font-medium text-white ${btnBase}`}
+            >
+              Add
+            </button>
+          </div>
+          {activeTableSeats.length ? (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">Seat numbers</p>
+              <div className="flex flex-wrap gap-2">
+                {activeTableSeats.map((seat) => {
+                  const seatNo = seat.seat_number;
+                  const selected = parseSeatList(seatNumbers).includes(seatNo);
+                  return (
+                    <button
+                      key={seat.id || seatNo}
+                      type="button"
+                      onClick={() => toggleSeat(seatNo)}
+                      className={`rounded-full font-medium ${
+                        touch ? 'min-h-11 min-w-11 px-4 py-2 text-sm' : 'px-3 py-1 text-xs'
+                      } ${
+                        selected
+                          ? 'bg-emerald-600 text-white'
+                          : 'border border-stone-300 text-stone-600 dark:border-stone-600'
+                      }`}
+                    >
+                      Seat {seatNo}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+          <input
+            type="text"
+            value={seatNumbers}
+            onChange={(e) => setSeatNumbers(e.target.value)}
+            placeholder="Seat numbers (comma-separated)"
+            className={fieldClass}
+          />
+          <input
+            type="text"
+            value={itemRemarks}
+            onChange={(e) => setItemRemarks(e.target.value)}
+            placeholder="Item comment (e.g. no ice, well done)"
+            className={fieldClass}
+          />
+        </div>
+      ) : null}
+
+      {touch ? (
+        <div className="space-y-3">
+          {(selectedOrder.items || []).map((item) => (
+            <div
+              key={item.id}
+              className="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-base font-semibold">{item.description}</p>
+                  {item.remarks ? <p className="text-sm text-stone-500">Note: {item.remarks}</p> : null}
+                  <p className="mt-1 text-sm text-stone-500">
+                    Qty{' '}
+                    {item.fulfilled_quantity != null && Number(item.fulfilled_quantity) !== Number(item.quantity)
+                      ? `${item.fulfilled_quantity}/${item.quantity}`
+                      : item.quantity}{' '}
+                    · {item.destination} · Seats {item.seat_numbers || '—'}
+                  </p>
+                  <p className="mt-1 font-medium">{formatMoney(item.line_total)}</p>
+                </div>
+                <OrderStatusPill status={item.item_status} type="item" />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {selectedOrder.workflow_status === 'DRAFT' ? (
+                  <button
+                    type="button"
+                    onClick={() => runAction('Item removed', () => removeOrderItem(selectedOrder.id, item.id))}
+                    className={`inline-flex items-center gap-2 border border-red-300 text-red-600 ${btnBase}`}
+                  >
+                    <FiTrash2 /> Remove
+                  </button>
+                ) : null}
+                {['READY', 'DEPLETED'].includes(item.item_status) ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setLoading(true);
+                      try {
+                        await markItemServed(item.id);
+                        const fresh = await fetchOrder(selectedOrder.id);
+                        setSelectedOrder(fresh);
+                        await reloadOrders();
+                      } catch (error) {
+                        showQuickError('Failed', error.message);
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    className={`bg-emerald-600 font-medium text-white ${btnBase}`}
+                  >
+                    {item.item_status === 'DEPLETED' ? 'Acknowledge' : 'Received'}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ))}
+          <div className="text-right text-xl font-bold">Total: {formatMoney(selectedOrder.total || 0)}</div>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded-xl border border-stone-200 dark:border-stone-700">
+            <table className="min-w-full text-sm">
+              <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-800">
+                <tr>
+                  <th className="px-3 py-2">Item</th>
+                  <th className="px-3 py-2">Seats</th>
+                  <th className="px-3 py-2">Route</th>
+                  <th className="px-3 py-2">Qty</th>
+                  <th className="px-3 py-2">Price</th>
+                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {(selectedOrder.items || []).map((item) => (
+                  <tr key={item.id} className="border-t border-stone-100 dark:border-stone-800">
+                    <td className="px-3 py-2">
+                      <p className="font-medium">{item.description}</p>
+                      {item.remarks ? <p className="text-xs text-stone-500">Note: {item.remarks}</p> : null}
+                    </td>
+                    <td className="px-3 py-2">{item.seat_numbers || '—'}</td>
+                    <td className="px-3 py-2">{item.destination}</td>
+                    <td className="px-3 py-2">
+                      {item.fulfilled_quantity != null && Number(item.fulfilled_quantity) !== Number(item.quantity)
+                        ? `${item.fulfilled_quantity}/${item.quantity}`
+                        : item.quantity}
+                    </td>
+                    <td className="px-3 py-2">{formatMoney(item.line_total)}</td>
+                    <td className="px-3 py-2">
+                      <OrderStatusPill status={item.item_status} type="item" />
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      {selectedOrder.workflow_status === 'DRAFT' ? (
+                        <button
+                          type="button"
+                          onClick={() => runAction('Item removed', () => removeOrderItem(selectedOrder.id, item.id))}
+                          className="text-red-500"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      ) : null}
+                      {['READY', 'DEPLETED'].includes(item.item_status) ? (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setLoading(true);
+                            try {
+                              await markItemServed(item.id);
+                              const fresh = await fetchOrder(selectedOrder.id);
+                              setSelectedOrder(fresh);
+                              await reloadOrders();
+                            } catch (error) {
+                              showQuickError('Failed', error.message);
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          className="rounded-lg bg-emerald-600 px-2 py-1 text-xs font-medium text-white"
+                        >
+                          {item.item_status === 'DEPLETED' ? 'Acknowledge' : 'Received'}
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex justify-end text-lg font-bold">Total: {formatMoney(selectedOrder.total || 0)}</div>
+        </>
+      )}
+    </div>
+  );
+
+  const enterPosMode = async () => {
+    setPosOverride(true);
+    await enterFullscreen();
+  };
+
+  if (posMode) {
+    return (
+      <WaiterPosShell
+        tab={posTab}
+        onTabChange={setPosTab}
+        selectedOrderLabel={selectedOrder?.order_no || selectedOrder?.code}
+        onExitPos={() => setPosOverride(false)}
+        outletSelect={
+          <SearchableSelect
+            options={outletOptions}
+            value={outletId}
+            onChange={setOutletId}
+            placeholder="Select outlet…"
+          />
+        }
+        alerts={alertsPanel}
+        ordersPanel={
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-bold">Active orders</h2>
+              <button
+                type="button"
+                onClick={() => reloadOrders()}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-stone-200 dark:border-stone-600"
+                aria-label="Refresh orders"
+              >
+                <FiRefreshCw className="h-5 w-5" />
+              </button>
+            </div>
+            <ActiveOrdersList
+              orders={orders}
+              selectedOrderId={selectedOrder?.id}
+              onSelectOrder={handleSelectOrder}
+              touchFriendly
+            />
+          </div>
+        }
+        newOrderPanel={
+          <div className="space-y-4 rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
+            <h2 className="text-lg font-bold">New order</h2>
+            <NewOrderForm {...newOrderProps} hideOutlet touchFriendly />
+          </div>
+        }
+        detailPanel={
+          <div className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
+            {orderDetailPanel}
+          </div>
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        icon={FiCoffee}
+        title="Waiter Orders"
+        subtitle="Create guest orders, route food to kitchen and beverages to bar"
+        actions={[
+          {
+            label: 'POS mode',
+            icon: FiMaximize,
+            onClick: enterPosMode,
+          },
+          {
+            label: unreadCount ? `Alerts (${unreadCount})` : 'Alerts',
+            icon: FiBell,
+            onClick: refreshNotifications,
+          },
+        ]}
+      />
+
+      {alertsPanel}
 
       <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
         <WaiterOrdersSidebar
@@ -476,296 +958,7 @@ const WaiterOrders = () => {
         />
 
         <div className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
-          {!selectedOrder ? (
-            <p className="text-sm text-stone-500">Select or create an order to start adding items.</p>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl font-bold">{selectedOrder.order_no || selectedOrder.code}</h2>
-                    <OrderStatusPill status={selectedOrder.workflow_status} />
-                    {selectedOrder.preparation_locked ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
-                        <FiLock className="h-3 w-3" /> Kitchen/bar preparing
-                      </span>
-                    ) : null}
-                    {selectedOrder.is_complementary ? (
-                      <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-800">
-                        Complementary
-                        {selectedOrder.complementary_status === 'PENDING' ? ' · Pending approval' : ''}
-                        {selectedOrder.complementary_status === 'APPROVED' ? ' · Approved' : ''}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="text-sm text-stone-500">
-                    Ref {selectedOrder.code} · {selectedOrder.outlet?.name} · Table {selectedOrder.table?.table_number || '—'} · Waiter{' '}
-                    {selectedOrder.waiter?.full_name || '—'}
-                    {activeSelectedOrderType ? ` · ${activeSelectedOrderType.name}` : ''}
-                    {selectedOrder.room_number ? ` · Room ${selectedOrder.room_number}` : ''}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {orderHasItems && canPrintWaiterOrder(selectedOrder) ? (
-                    <button type="button" onClick={handlePrint} className="rounded-lg border px-3 py-2 text-sm">
-                      <FiFileText className="inline" /> Print receipt
-                    </button>
-                  ) : null}
-                  {selectedOrder.workflow_status === 'DRAFT' ? (
-                    <>
-                      {orderHasItems ? (
-                        <button
-                          type="button"
-                          disabled={loading || selectedOrder.is_complementary && selectedOrder.complementary_status !== 'APPROVED'}
-                          title={
-                            selectedOrder.is_complementary && selectedOrder.complementary_status !== 'APPROVED'
-                              ? 'Complementary orders need hotel manager approval before submitting'
-                              : 'Submit to kitchen/bar'
-                          }
-                          onClick={() => runAction('Order submitted', () => submitOrder(selectedOrder.id))}
-                          className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          Submit to kitchen/bar
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        disabled={loading}
-                        onClick={() => runAction('Order cancelled', () => cancelOrder(selectedOrder.id))}
-                        className="rounded-lg border border-red-300 px-3 py-2 text-sm text-red-600"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : null}
-                  {selectedOrder.workflow_status === 'OPEN' ? (
-                    <>
-                      <button
-                        type="button"
-                        disabled={loading || closeDisabled}
-                        title={closeDisabled ? 'Receive all items before closing' : 'Close order'}
-                        onClick={() => runAction('Order closed', () => closeOrder(selectedOrder.id))}
-                        className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Close order
-                      </button>
-                      <button
-                        type="button"
-                        disabled={loading || cancelOpenDisabled}
-                        title={
-                          selectedOrder.preparation_locked
-                            ? 'Order is locked while kitchen or bar is preparing'
-                            : cancelOpenDisabled
-                              ? 'Receive all items before cancelling'
-                              : 'Cancel order'
-                        }
-                        onClick={() => runAction('Order cancelled', () => cancelOrder(selectedOrder.id))}
-                        className="rounded-lg border border-red-300 px-3 py-2 text-sm text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-
-              {selectedOrder.workflow_status === 'DRAFT' ? (
-                <div className="space-y-3 rounded-xl border border-stone-200 p-3 dark:border-stone-700">
-                  <p className="text-sm font-medium">Order details</p>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium">Order type</label>
-                    <SearchableSelect options={orderTypeOptions} value={orderTypeId} onChange={setOrderTypeId} placeholder="Select order type…" />
-                  </div>
-                  <label className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={isComplementary} onChange={(e) => setIsComplementary(e.target.checked)} />
-                    Complementary order
-                  </label>
-                  {(editingOrderType?.requires_room_number) ? (
-                    <div>
-                      <label className="mb-1 block text-sm font-medium">Room number</label>
-                      <input
-                        type="text"
-                        value={roomNumber}
-                        onChange={(e) => setRoomNumber(e.target.value)}
-                        className="w-full rounded-lg border px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-800"
-                      />
-                    </div>
-                  ) : null}
-                  {(editingOrderType?.requires_guest_signature) ? (
-                    <div>
-                      <label className="mb-1 block text-sm font-medium">Guest signature</label>
-                      <SignaturePad value={guestSignature} onChange={setGuestSignature} />
-                    </div>
-                  ) : null}
-                  <button type="button" onClick={handleSaveDetails} className="rounded-lg border px-3 py-2 text-sm">
-                    Save order details
-                  </button>
-                </div>
-              ) : null}
-
-              <div className="rounded-xl border border-stone-200 p-3 dark:border-stone-700">
-                <label className="mb-1 block text-sm font-medium">Order note</label>
-                <textarea
-                  value={orderRemarks}
-                  onChange={(e) => setOrderRemarks(e.target.value)}
-                  onBlur={handleSaveRemarks}
-                  rows={2}
-                  disabled={!['DRAFT', 'OPEN'].includes(selectedOrder.workflow_status)}
-                  placeholder="General comments for this order…"
-                  className="w-full rounded-lg border px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-800"
-                />
-              </div>
-
-              {canModifyItems ? (
-                <div className="space-y-3 rounded-xl border border-stone-200 p-3 dark:border-stone-700">
-                  <p className="text-sm font-medium">
-                    {selectedOrder.workflow_status === 'OPEN' ? 'Add more items (sent immediately)' : 'Add items'}
-                  </p>
-                  <div className="grid gap-3 md:grid-cols-[140px_1fr_90px_auto]">
-                    <select
-                      value={lineType}
-                      onChange={(e) => {
-                        setLineType(e.target.value);
-                        setCatalogId('');
-                      }}
-                      className="rounded-lg border px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-800"
-                    >
-                      <option value="MENU">Menu</option>
-                      <option value="FOOD">Food item</option>
-                      <option value="BEVERAGE">Beverage</option>
-                    </select>
-                    <SearchableSelect options={catalogOptions} value={catalogId} onChange={setCatalogId} placeholder="Select item…" />
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      className="rounded-lg border px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-800"
-                    />
-                    <button
-                      type="button"
-                      disabled={loading}
-                      onClick={handleAddItem}
-                      className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
-                    >
-                      Add
-                    </button>
-                  </div>
-                  {activeTableSeats.length ? (
-                    <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">Seat numbers</p>
-                      <div className="flex flex-wrap gap-2">
-                        {activeTableSeats.map((seat) => {
-                          const seatNo = seat.seat_number;
-                          const selected = parseSeatList(seatNumbers).includes(seatNo);
-                          return (
-                            <button
-                              key={seat.id || seatNo}
-                              type="button"
-                              onClick={() => toggleSeat(seatNo)}
-                              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                selected
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'border border-stone-300 text-stone-600 dark:border-stone-600'
-                              }`}
-                            >
-                              Seat {seatNo}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : null}
-                  <input
-                    type="text"
-                    value={seatNumbers}
-                    onChange={(e) => setSeatNumbers(e.target.value)}
-                    placeholder="Seat numbers (comma-separated)"
-                    className="w-full rounded-lg border px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-800"
-                  />
-                  <input
-                    type="text"
-                    value={itemRemarks}
-                    onChange={(e) => setItemRemarks(e.target.value)}
-                    placeholder="Item comment (e.g. no ice, well done)"
-                    className="w-full rounded-lg border px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-800"
-                  />
-                </div>
-              ) : null}
-
-              <div className="overflow-x-auto rounded-xl border border-stone-200 dark:border-stone-700">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-800">
-                    <tr>
-                      <th className="px-3 py-2">Item</th>
-                      <th className="px-3 py-2">Seats</th>
-                      <th className="px-3 py-2">Route</th>
-                      <th className="px-3 py-2">Qty</th>
-                      <th className="px-3 py-2">Price</th>
-                      <th className="px-3 py-2">Status</th>
-                      <th className="px-3 py-2" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(selectedOrder.items || []).map((item) => (
-                      <tr key={item.id} className="border-t border-stone-100 dark:border-stone-800">
-                        <td className="px-3 py-2">
-                          <p className="font-medium">{item.description}</p>
-                          {item.remarks ? <p className="text-xs text-stone-500">Note: {item.remarks}</p> : null}
-                        </td>
-                        <td className="px-3 py-2">{item.seat_numbers || '—'}</td>
-                        <td className="px-3 py-2">{item.destination}</td>
-                        <td className="px-3 py-2">
-                          {item.fulfilled_quantity != null && Number(item.fulfilled_quantity) !== Number(item.quantity)
-                            ? `${item.fulfilled_quantity}/${item.quantity}`
-                            : item.quantity}
-                        </td>
-                        <td className="px-3 py-2">{formatMoney(item.line_total)}</td>
-                        <td className="px-3 py-2">
-                          <OrderStatusPill status={item.item_status} type="item" />
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          {selectedOrder.workflow_status === 'DRAFT' ? (
-                            <button
-                              type="button"
-                              onClick={() => runAction('Item removed', () => removeOrderItem(selectedOrder.id, item.id))}
-                              className="text-red-500"
-                            >
-                              <FiTrash2 />
-                            </button>
-                          ) : null}
-                          {['READY', 'DEPLETED'].includes(item.item_status) ? (
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                setLoading(true);
-                                try {
-                                  await markItemServed(item.id);
-                                  const fresh = await fetchOrder(selectedOrder.id);
-                                  setSelectedOrder(fresh);
-                                  await reloadOrders();
-                                } catch (error) {
-                                  showQuickError('Failed', error.message);
-                                } finally {
-                                  setLoading(false);
-                                }
-                              }}
-                              className="rounded-lg bg-emerald-600 px-2 py-1 text-xs font-medium text-white"
-                            >
-                              {item.item_status === 'DEPLETED' ? 'Acknowledge' : 'Received'}
-                            </button>
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex justify-end text-lg font-bold">Total: {formatMoney(selectedOrder.total || 0)}</div>
-            </div>
-          )}
+          {orderDetailPanel}
         </div>
       </div>
     </div>

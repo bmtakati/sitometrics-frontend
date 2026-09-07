@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { PosModeProvider } from './context/PosModeContext';
 import { hasPermission } from './utils/permissions';
 import Layout from './components/Layout/Layout';
 
@@ -89,6 +90,7 @@ const WaiterOrders = lazy(() => import('./pages/service/WaiterOrders'));
 const KitchenQueue = lazy(() => import('./pages/service/KitchenQueue'));
 const BarQueue = lazy(() => import('./pages/service/BarQueue'));
 const CashierSales = lazy(() => import('./pages/service/CashierSales'));
+const PrintJobs = lazy(() => import('./pages/service/PrintJobs'));
 
 const DocumentVerify = lazy(() => import('./pages/DocumentVerify'));
 
@@ -220,6 +222,7 @@ function AppRoutes() {
         <Route path="service/kitchen-queue" element={<KitchenQueue />} />
         <Route path="service/bar-queue" element={<BarQueue />} />
         <Route path="service/cashier" element={can('view-cashier-sales') ? <CashierSales /> : <Navigate to="/dashboard" replace />} />
+        <Route path="service/print-jobs" element={can('print-waiter-orders') ? <PrintJobs /> : <Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>
     </Suspense>
@@ -230,16 +233,18 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/verify/:code" element={<DocumentVerify />} />
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/landing" element={<Navigate to="/" replace />} />
-            <Route path="/landing-test" element={<LandingPageTest />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/*" element={<AppRoutes />} />
-          </Routes>
-        </Suspense>
+        <PosModeProvider>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/verify/:code" element={<DocumentVerify />} />
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/landing" element={<Navigate to="/" replace />} />
+              <Route path="/landing-test" element={<LandingPageTest />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/*" element={<AppRoutes />} />
+            </Routes>
+          </Suspense>
+        </PosModeProvider>
       </AuthProvider>
     </Router>
   );
