@@ -60,6 +60,8 @@ const Supplier = () => {
       tin: '',
       vrn: '',
       status_id: '',
+      contract_start_date: '',
+      contract_end_date: '',
       contract: null,
       remove_contract: false,
       supplier_items: [{ item_id: '', agreed_price: '' }],
@@ -71,9 +73,12 @@ const Supplier = () => {
         errors.email = 'Please enter a valid email';
       }
       if (!data.status_id) errors.status_id = 'Please select a status';
-      if (!data.contract && !data.contract_url) {
-        errors.contract = 'Supplier contract PDF is required';
-      } else if (data.contract instanceof File && data.contract.type && data.contract.type !== 'application/pdf') {
+      if (!data.contract_start_date) errors.contract_start_date = 'Contract start date is required';
+      if (!data.contract_end_date) errors.contract_end_date = 'Contract end date is required';
+      if (data.contract_start_date && data.contract_end_date && data.contract_end_date < data.contract_start_date) {
+        errors.contract_end_date = 'Contract end date must be on or after the start date';
+      }
+      if (data.contract instanceof File && data.contract.type && data.contract.type !== 'application/pdf') {
         errors.contract = 'Contract must be a PDF file';
       }
 
@@ -108,6 +113,8 @@ const Supplier = () => {
         address: data.address?.trim() || null,
         tin: data.tin?.trim() || null,
         vrn: data.vrn?.trim() || null,
+        contract_start_date: data.contract_start_date,
+        contract_end_date: data.contract_end_date,
         status_id: Number(data.status_id),
         remove_contract: data.remove_contract ? '1' : '0',
         items: hasContractFile ? JSON.stringify(validItems) : validItems,
@@ -119,6 +126,8 @@ const Supplier = () => {
         ...row,
         contract: null,
         remove_contract: false,
+        contract_start_date: row.contract_start_date || '',
+        contract_end_date: row.contract_end_date || '',
         supplier_items: (row.supplier_items || []).map((line) => ({
           item_id: String(line.item_id),
           agreed_price: line.agreed_price,
@@ -208,6 +217,8 @@ const Supplier = () => {
       label: 'Contract',
       icon: FiFileText,
       fields: [
+        { name: 'contract_start_date', label: 'Start Date', type: 'date', required: true },
+        { name: 'contract_end_date', label: 'End Date', type: 'date', required: true },
         {
           name: 'contract',
           type: 'custom',
@@ -268,6 +279,8 @@ const Supplier = () => {
       label: 'Contract',
       icon: FiFileText,
       fields: [
+        { label: 'Start Date', accessor: 'contract_start_date', type: 'date' },
+        { label: 'End Date', accessor: 'contract_end_date', type: 'date' },
         {
           label: 'Contract document',
           accessor: 'contract_url',

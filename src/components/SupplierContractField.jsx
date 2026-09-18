@@ -45,7 +45,7 @@ const SupplierContractField = ({ formData, onInputChange, errors = {}, darkMode 
           className={inputClass}
         />
         <p className={`mt-1 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-          PDF only, max 10MB. {isEditing ? 'Upload a new file to replace the current contract.' : 'Required when creating a supplier.'}
+          PDF only, max 10MB. {isEditing ? 'Upload a new file to replace the current contract.' : 'Optional when creating a supplier.'}
         </p>
         {errors.contract ? <p className="mt-1 text-sm text-red-600">{errors.contract}</p> : null}
       </div>
