@@ -11,6 +11,8 @@ export function isDescriptionField(field) {
 /**
  * Places description immediately after the primary name/title field and
  * configures both for a shared two-column row.
+ * When description has fullWidth: true, keep its declared order (e.g. last row)
+ * and leave it as a full-width textarea.
  */
 export function normalizeFormFieldsForLayout(fields) {
   if (!Array.isArray(fields) || fields.length === 0) return fields;
@@ -20,8 +22,9 @@ export function normalizeFormFieldsForLayout(fields) {
   if (nameIdx === -1 || descIdx === -1) return fields;
 
   let result = fields.map((field) => ({ ...field }));
+  const descriptionIsFullWidth = result[descIdx]?.fullWidth === true;
 
-  if (descIdx !== nameIdx + 1) {
+  if (!descriptionIsFullWidth && descIdx !== nameIdx + 1) {
     const [descField] = result.splice(descIdx, 1);
     const insertAt = descIdx < nameIdx ? nameIdx : nameIdx + 1;
     result.splice(insertAt, 0, descField);

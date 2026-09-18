@@ -54,8 +54,11 @@ const FormModal = ({
   submitLabel,
   maxWidth = 'max-w-4xl',
   tabs = null,
+  initialTab = null,
   fieldsLayout = 'two-col', // 'stack' | 'two-col' | 'three-col'
-  readOnly = false
+  hideFooter = false,
+  readOnly = false,
+  overlayClassName = ''
 }) => {
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('darkMode') === 'true';
@@ -136,9 +139,12 @@ const FormModal = ({
 
   useEffect(() => {
     if (isOpen && tabs?.length) {
-      setActiveTab(tabs[0].id);
+      const preferred = initialTab && tabs.some((tab) => tab.id === initialTab)
+        ? initialTab
+        : tabs[0].id;
+      setActiveTab(preferred);
     }
-  }, [isOpen]);
+  }, [isOpen, initialTab]);
 
   const normalizedFields = useMemo(
     () => normalizeFormFieldsForLayout(fields),
@@ -280,6 +286,7 @@ const FormModal = ({
               darkMode={darkMode}
               autoFocus={!readOnly && autoFocus}
               invalid={hasFieldError}
+              createOption={field.createOption}
             />
             <label
               className={
@@ -422,6 +429,9 @@ const FormModal = ({
             {errors[name] && (
               <p className="mt-1 text-sm text-red-600">{errors[name]}</p>
             )}
+            {field.helpText ? (
+              <p className={`mt-1 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>{field.helpText}</p>
+            ) : null}
           </div>
         );
     }
@@ -444,7 +454,7 @@ const FormModal = ({
   const currentTabId = activeTab || normalizedTabs?.[0]?.id;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 backdrop-blur-sm sm:items-center sm:p-4">
+    <div className={`fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 backdrop-blur-sm sm:items-center sm:p-4 ${overlayClassName}`}>
       <div 
         className="absolute inset-0" 
         onClick={onClose}
@@ -607,6 +617,7 @@ const FormModal = ({
           )}
 
           {/* Action Buttons */}
+          {!hideFooter ? (
           <div className="flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:justify-end">
             {readOnly ? (
               <button
@@ -644,6 +655,7 @@ const FormModal = ({
               </button>
             )}
           </div>
+          ) : null}
         </form>
       </div>
     </div>

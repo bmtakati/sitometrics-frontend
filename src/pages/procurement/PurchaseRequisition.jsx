@@ -1,39 +1,34 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import {
-  FiCheck,
   FiCheckCircle,
   FiClipboard,
   FiEdit2,
+  FiGitPullRequest,
   FiInfo,
+  FiMessageSquare,
   FiPackage,
-  FiSend,
   FiShield,
   FiTrash2,
   FiTrendingUp,
-  FiX,
+  FiUsers,
   FiXCircle,
 } from 'react-icons/fi';
 import WorkflowStatusPill from '../../components/WorkflowStatusPill';
-import {
-  showQuickError,
-  showQuickSuccess,
-  showWorkflowConfirm,
-} from '../../utils/dialogUtils';
+import WorkflowTaskModal from '../../components/workflow/WorkflowTaskModal';
+import { WorkflowCommentsTab } from '../../components/workflow/WorkflowTaskDetailTabs';
+import PageTabs from '../../components/PageTabs';
+import { showQuickError } from '../../utils/dialogUtils';
 import useApiCrud from '../../hooks/useApiCrud';
 import CRUDPage from '../../components/CRUDPage/CRUDPage';
 import PrItemsEditor from '../../components/PrItemsEditor';
 import { API_BASE_URL, useAuth } from '../../context/AuthContext';
 import apiFetch from '../../utils/apiFetch';
-import { hasPermission } from '../../utils/permissions';
-import {
-  approvePurchaseRequisition,
-  convertPurchaseRequisitionToLpo,
-  rejectPurchaseRequisition,
-  submitPurchaseRequisition,
-  verifyPurchaseRequisition,
-} from '../../utils/purchaseRequisitionApi';
+import { crudPermissions, hasAnyPermission, hasPermission } from '../../utils/permissions';
+import { publicKey } from '../../utils/publicKey';
+import { ensurePurchaseRequisitionWorkflow } from '../../utils/purchaseRequisitionApi';
+import useDarkMode from '../../hooks/useDarkMode';
 
-const EDITABLE_STATUSES = ['DRAFT', 'REJECTED'];
+const EDITABLE_STATUSES = ['DRAFT', 'REJECTED', 'RETURNED'];
 
 const validatePrItems = (lines) => {
   const validLines = (lines || []).filter((line) => line.item_id && Number(line.quantity) > 0);
@@ -49,24 +44,42 @@ const validatePrItems = (lines) => {
 
 const PurchaseRequisition = () => {
   const { user } = useAuth();
-  const canManage = hasPermission(user, 'manage-purchase-requisitions');
-  const canView = canManage || hasPermission(user, 'view-purchase-requisitions');
-  const canCreate = canManage || hasPermission(user, 'create-purchase-requisitions');
-  const canSubmit = canManage || hasPermission(user, 'submit-purchase-requisitions');
-  const canVerify = canManage || hasPermission(user, 'verify-purchase-requisitions');
-  const canApprove = canManage || hasPermission(user, 'approve-purchase-requisitions');
-  const canReject = canManage || hasPermission(user, 'reject-purchase-requisitions');
-  const canConvert = canManage || hasPermission(user, 'convert-purchase-requisitions-to-lpo');
+  const darkMode = useDarkMode();
+  const canViewAll = hasPermission(user, 'view-all-purchase-requisitions');
+  const canViewWorkflowComments = hasPermission(user, 'edit-workflows')
+    || hasPermission(user, 'view-workflow-comments')
+    || hasPermission(user, 'view-workflow-history');
+  const canCreate = hasPermission(user, 'add-purchase-requisitions');
+  const canEdit = hasPermission(user, 'edit-purchase-requisitions');
+  const canDelete = hasPermission(user, 'delete-purchase-requisitions');
+  const canRestore = hasPermission(user, 'restore-purchase-requisitions');
+  const canSubmit = hasPermission(user, 'submit-purchase-requisitions');
+  const canVerify = hasPermission(user, 'verify-purchase-requisitions');
+  const canApprove = hasPermission(user, 'approve-purchase-requisitions');
+  const canReject = hasPermission(user, 'reject-purchase-requisitions');
+  const canConvert = hasPermission(user, 'convert-purchase-requisitions-to-lpo');
+  const canView = hasAnyPermission(user, crudPermissions('purchase-requisitions'))
+    || canViewAll
+    || hasPermission(user, 'view-purchase-requisitions')
+    || canSubmit
+    || canVerify
+    || canApprove
+    || canReject
+    || canConvert;
 
   const [items, setItems] = React.useState([]);
   const [categories, setCategories] = React.useState([]);
+  const [workflowModalOpen, setWorkflowModalOpen] = React.useState(false);
+  const [workflowInstanceKey, setWorkflowInstanceKey] = React.useState(null);
+  const [ownershipTab, setOwnershipTab] = React.useState('mine');
+  const viewingOthers = canViewAll && ownershipTab === 'others';
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const [itemsRes, categoriesRes] = await Promise.all([
-          apiFetch(`${API_BASE_URL}/api/items/all`),
+          apiFetch(`${API_BASE_URL}/api/items/all?procurable=1`),
           apiFetch(`${API_BASE_URL}/api/item-categories/all`),
         ]);
         const itemsData = await itemsRes.json().catch(() => ({}));
@@ -93,6 +106,7 @@ const PurchaseRequisition = () => {
       pr_items: [],
       status_id: '',
     },
+    initialExtraListParams: canViewAll ? { ownership: 'mine' } : {},
     validateForm: (data) => {
       const errors = {};
       if (!data.requisition_date) errors.requisition_date = 'Requisition date is required';
@@ -109,9 +123,11 @@ const PurchaseRequisition = () => {
           ? row.items.map((line) => ({
               item_id: String(line.item_id),
               quantity: line.quantity,
+              item_unit_id: line.item_unit_id ? String(line.item_unit_id) : '',
               remarks: line.remarks || '',
             }))
           : [],
+        workflow_detail: row?.workflow_detail || null,
       });
       return Array.isArray(payload) ? payload.map(normalize) : normalize(payload);
     },
@@ -123,11 +139,16 @@ const PurchaseRequisition = () => {
         .filter((line) => line.item_id && Number(line.quantity) > 0)
         .map((line) => ({
           item_id: Number(line.item_id),
+          item_unit_id: line.item_unit_id ? Number(line.item_unit_id) : null,
           quantity: Number(line.quantity),
           remarks: line.remarks?.trim() || null,
         })),
     }),
     resourceName: 'Purchase Requisition',
+    canAdd: canCreate,
+    canEdit,
+    canDelete,
+    canRestore,
     itemsPerPage: 10,
     enrichStats: ({ stats }) => ({
       ...stats,
@@ -139,38 +160,108 @@ const PurchaseRequisition = () => {
     }),
   });
 
-  const runWorkflowAction = useCallback(
-    async (row, { label, fn, confirmText, inputLabel }) => {
-      const result = await showWorkflowConfirm({
-        title: label,
-        message: confirmText,
-        confirmText: label,
-        withRemarks: Boolean(inputLabel),
-        remarksLabel: inputLabel,
-      });
+  useEffect(() => {
+    if (!canViewAll) {
+      crud.setExtraListParams({});
+      return;
+    }
+    crud.setExtraListParams({ ownership: ownershipTab === 'others' ? 'others' : 'mine' });
+    crud.handlePageChange(1);
+  }, [canViewAll, ownershipTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-      if (!result.isConfirmed) return;
+  const handleOwnershipTabChange = (tabId) => {
+    setOwnershipTab(tabId);
+  };
+  const workflowInstanceForRow = useCallback((row) => {
+    if (!row) return null;
+
+    return row.workflow_instance
+      || row.active_workflow
+      || row.latest_workflow
+      || row.workflowInstance
+      || row.activeWorkflow
+      || row.latestWorkflow
+      || (Array.isArray(row.workflow_instances) ? row.workflow_instances[0] : null)
+      || (Array.isArray(row.workflowInstances) ? row.workflowInstances[0] : null);
+  }, []);
+
+  const workflowInstanceKeyForRow = useCallback(
+    (row) => {
+      const instance = workflowInstanceForRow(row);
+      return publicKey(instance) || instance?.uid || instance?.id || row?.workflow_instance_id || null;
+    },
+    [workflowInstanceForRow]
+  );
+
+  const canProcessRequisitionWorkflow = useCallback((row) => {
+    if (!row || viewingOthers) return false;
+
+    const serverAllowed = row.can_process_workflow ?? row.canProcessWorkflow;
+    if (serverAllowed === true || serverAllowed === 1 || serverAllowed === '1') {
+      return true;
+    }
+    if (serverAllowed === false || serverAllowed === 0 || serverAllowed === '0') {
+      return false;
+    }
+
+    const status = String(row.workflow_status || '').toUpperCase();
+    if (canSubmit && EDITABLE_STATUSES.includes(status)) {
+      return true;
+    }
+
+    return false;
+  }, [canSubmit, viewingOthers]);
+
+  const openWorkflowModal = useCallback(
+    async (row) => {
+      if (!canProcessRequisitionWorkflow(row)) {
+        showQuickError('Workflow unavailable', 'No workflow task is available for this requisition.');
+        return;
+      }
 
       try {
-        await fn(row.id, result.remarks);
-        await crud.reload();
-        showQuickSuccess(`${label} successful`);
+        let instanceKey = workflowInstanceKeyForRow(row);
+
+        if (!instanceKey && canSubmit && EDITABLE_STATUSES.includes(row.workflow_status)) {
+          const instance = await ensurePurchaseRequisitionWorkflow(row.id);
+          await crud.reload();
+          instanceKey = instance?.uid || instance?.slug || publicKey(instance) || instance?.id;
+        }
+
+        if (!instanceKey) {
+          showQuickError('Workflow unavailable', 'No workflow task is available for this requisition.');
+          return;
+        }
+
+        setWorkflowInstanceKey(instanceKey);
+        setWorkflowModalOpen(true);
       } catch (error) {
-        showQuickError(`${label} failed`, error.message);
+        showQuickError('Workflow unavailable', error.message);
       }
     },
-    [crud]
+    [canProcessRequisitionWorkflow, canSubmit, crud, workflowInstanceKeyForRow]
   );
 
   const pageConfig = {
     icon: FiClipboard,
     title: 'Purchase Requisitions',
-    subtitle: 'Create requisitions, verify line items, and approve for procurement',
+    subtitle: viewingOthers
+      ? 'Track status of requisitions created by other users'
+      : 'Create requisitions, verify line items, and approve for procurement',
     addButtonLabel: 'Add Requisition',
     searchPlaceholder: 'Search requisitions...',
-    hideAddButton: !canCreate,
+    hideAddButton: !canCreate || viewingOthers,
     hideActions: ['edit', 'delete'],
   };
+
+  const ownershipTabs = useMemo(() => (
+    canViewAll
+      ? [
+          { id: 'mine', label: 'My Requisitions', icon: FiClipboard },
+          { id: 'others', label: 'Other Requisitions', icon: FiUsers },
+        ]
+      : []
+  ), [canViewAll]);
 
   const statsConfig = {
     cards: [
@@ -184,6 +275,14 @@ const PurchaseRequisition = () => {
   const tableColumns = [
     { header: 'Code', accessor: 'code', noWrap: true },
     { header: 'Date', accessor: 'requisition_date', noWrap: true },
+    ...(viewingOthers
+      ? [{
+          header: 'Requested By',
+          accessor: 'requester.full_name',
+          noWrap: true,
+          render: (row) => row.requester?.full_name || '—',
+        }]
+      : []),
     {
       header: 'Workflow',
       accessor: 'workflow_status',
@@ -281,6 +380,7 @@ const PurchaseRequisition = () => {
                               <th className="px-3 py-2">Item</th>
                               <th className="px-3 py-2">Code</th>
                               <th className="px-3 py-2">Qty</th>
+                              <th className="px-3 py-2">Unit</th>
                               <th className="px-3 py-2">Remarks</th>
                             </tr>
                           </thead>
@@ -290,6 +390,7 @@ const PurchaseRequisition = () => {
                                 <td className="px-3 py-2">{line.item?.name || line.item_id}</td>
                                 <td className="px-3 py-2">{line.item?.code || '—'}</td>
                                 <td className="px-3 py-2">{line.quantity}</td>
+                                <td className="px-3 py-2">{line.item_unit?.unit?.symbol || line.item_unit?.unit?.name || line.itemUnit?.unit?.symbol || line.itemUnit?.unit?.name || '—'}</td>
                                 <td className="px-3 py-2">{line.remarks || '—'}</td>
                               </tr>
                             ))}
@@ -304,85 +405,48 @@ const PurchaseRequisition = () => {
         },
       ],
     },
+    ...(canViewWorkflowComments
+      ? [{
+          id: 'workflow-comments',
+          label: 'Comments',
+          icon: FiMessageSquare,
+          fields: [
+            {
+              label: 'Workflow comments',
+              accessor: 'workflow_detail',
+              fullWidth: true,
+              valueRender: (item, mode) => (
+                <WorkflowCommentsTab
+                  darkMode={typeof mode === 'boolean' ? mode : darkMode}
+                  detail={item?.workflow_detail || { action_history: [] }}
+                />
+              ),
+            },
+          ],
+        }]
+      : []),
   ];
 
   const extraActions = [
     {
       type: 'edit',
-      label: 'Edit',
+      label: (row) => (row.workflow_status === 'DRAFT' ? 'Edit Draft' : 'Edit'),
       icon: FiEdit2,
-      visible: (row) => canCreate && EDITABLE_STATUSES.includes(row.workflow_status),
+      visible: (row) => !viewingOthers && canEdit && EDITABLE_STATUSES.includes(row.workflow_status),
       onClick: (row) => crud.handleEdit(row),
     },
     {
-      type: 'submit',
-      label: 'Submit',
-      icon: FiSend,
-      visible: (row) => canSubmit && EDITABLE_STATUSES.includes(row.workflow_status),
-      onClick: (row) =>
-        runWorkflowAction(row, {
-          label: 'Submit',
-          fn: submitPurchaseRequisition,
-          confirmText: 'Submit this requisition for verification?',
-        }),
-    },
-    {
-      type: 'verify',
-      label: 'Verify',
-      icon: FiShield,
-      visible: (row) => canVerify && row.workflow_status === 'SUBMITTED',
-      onClick: (row) =>
-        runWorkflowAction(row, {
-          label: 'Verify',
-          fn: verifyPurchaseRequisition,
-          confirmText: 'Verify this requisition before approval?',
-          inputLabel: 'Verification remarks',
-        }),
-    },
-    {
-      type: 'approve',
-      label: 'Approve',
-      icon: FiCheck,
-      visible: (row) => canApprove && row.workflow_status === 'VERIFIED',
-      onClick: (row) =>
-        runWorkflowAction(row, {
-          label: 'Approve',
-          fn: approvePurchaseRequisition,
-          confirmText: 'Approve this verified requisition?',
-          inputLabel: 'Approval remarks',
-        }),
-    },
-    {
-      type: 'reject',
-      label: 'Reject',
-      icon: FiX,
-      visible: (row) => canReject && ['SUBMITTED', 'VERIFIED'].includes(row.workflow_status),
-      onClick: (row) =>
-        runWorkflowAction(row, {
-          label: 'Reject',
-          fn: rejectPurchaseRequisition,
-          confirmText: 'Reject this requisition?',
-          inputLabel: 'Rejection reason',
-        }),
-    },
-    {
-      type: 'convert',
-      label: 'Convert to LPO',
-      icon: FiCheckCircle,
-      visible: (row) => canConvert && row.workflow_status === 'APPROVED',
-      onClick: (row) =>
-        runWorkflowAction(row, {
-          label: 'Convert to LPO',
-          fn: convertPurchaseRequisitionToLpo,
-          confirmText: 'Mark this requisition as converted to LPO?',
-          inputLabel: 'Conversion remarks',
-        }),
+      type: 'workflow',
+      label: 'Process',
+      icon: FiGitPullRequest,
+      visible: canProcessRequisitionWorkflow,
+      onClick: openWorkflowModal,
     },
     {
       type: 'delete',
       label: 'Delete',
       icon: FiTrash2,
-      visible: (row) => canCreate && row.workflow_status === 'DRAFT',
+      visible: (row) => !viewingOthers && canDelete && row.workflow_status === 'DRAFT',
       onClick: (row) => crud.handleDelete(row),
     },
   ];
@@ -396,27 +460,48 @@ const PurchaseRequisition = () => {
   }
 
   return (
-    <CRUDPage
-      pageConfig={pageConfig}
-      statsConfig={statsConfig}
-      tableColumns={tableColumns}
-      formTabs={formTabs}
-      viewTabs={viewTabs}
-      modalTitle="Purchase Requisition"
-      modalMaxWidth="max-w-6xl"
-      crud={crud}
-      extraActions={extraActions}
-      filterOptions={[
-        { label: 'All', value: 'all' },
-        { label: 'Workflow: Draft', value: 'workflow:DRAFT' },
-        { label: 'Workflow: Submitted', value: 'workflow:SUBMITTED' },
-        { label: 'Workflow: Verified', value: 'workflow:VERIFIED' },
-        { label: 'Workflow: Approved', value: 'workflow:APPROVED' },
-        { label: 'Workflow: Rejected', value: 'workflow:REJECTED' },
-        { label: 'Workflow: Converted To LPO', value: 'workflow:CONVERTED_TO_LPO' },
-        { label: 'Trashed', value: 'trashed' },
-      ]}
-    />
+    <>
+      <CRUDPage
+        pageConfig={pageConfig}
+        statsConfig={statsConfig}
+        tableColumns={tableColumns}
+        formTabs={formTabs}
+        viewTabs={viewTabs}
+        modalTitle="Purchase Requisition"
+        modalMaxWidth="max-w-6xl"
+        crud={crud}
+        submitLabel={crud.isEditing ? 'Save Changes' : 'Save as Draft'}
+        extraActions={extraActions}
+        belowStats={ownershipTabs.length ? (
+          <PageTabs
+            tabs={ownershipTabs}
+            activeTab={ownershipTab}
+            onChange={handleOwnershipTabChange}
+            ariaLabel="Purchase requisition ownership"
+          />
+        ) : null}
+        filterOptions={[
+          { label: 'All', value: 'all' },
+          { label: 'Workflow: Draft', value: 'workflow:DRAFT' },
+          { label: 'Workflow: Submitted', value: 'workflow:SUBMITTED' },
+          { label: 'Workflow: Verified', value: 'workflow:VERIFIED' },
+          { label: 'Workflow: Approved', value: 'workflow:APPROVED' },
+          { label: 'Workflow: Rejected', value: 'workflow:REJECTED' },
+          { label: 'Workflow: Returned', value: 'workflow:RETURNED' },
+          { label: 'Workflow: Converted To LPO', value: 'workflow:CONVERTED_TO_LPO' },
+          { label: 'Trashed', value: 'trashed' },
+        ]}
+      />
+      <WorkflowTaskModal
+        isOpen={workflowModalOpen}
+        onClose={() => {
+          setWorkflowModalOpen(false);
+          setWorkflowInstanceKey(null);
+        }}
+        instanceKey={workflowInstanceKey}
+        onCompleted={crud.reload}
+      />
+    </>
   );
 };
 

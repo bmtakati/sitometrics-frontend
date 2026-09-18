@@ -343,7 +343,7 @@ const RoleHandover = () => {
   const { user: authUser, logout, setAuthUser } = useAuth();
   const navigate = useNavigate();
   const canView   = hasPermission(authUser, 'view-role-handovers');
-  const canCreate = hasPermission(authUser, 'create-role-handovers');
+  const canCreate = hasPermission(authUser, 'add-role-handovers');
 
   if (!canView) {
     return <AccessDeniedState message="You do not have permission to view role handovers." />;

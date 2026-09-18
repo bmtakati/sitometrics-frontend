@@ -94,10 +94,16 @@ const DataTable = ({
     actionButton = null
   } = emptyState;
 
+  const cellTextClass = `text-sm leading-5 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`;
+
   const renderCellValue = (row, column) => {
     // If custom render function provided, use it
     if (column.render) {
-      return column.render(row, darkMode);
+      return (
+        <div className={cellTextClass}>
+          {column.render(row, darkMode)}
+        </div>
+      );
     }
 
     // Get value from row using accessor (supports nested paths like 'user.name')
@@ -136,7 +142,7 @@ const DataTable = ({
 
     if (column.type === 'truncate') {
       return (
-        <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} max-w-xs truncate`} title={value || ''}>
+        <div className={`${cellTextClass} max-w-xs truncate`} title={value || ''}>
           {value || '—'}
         </div>
       );
@@ -152,7 +158,7 @@ const DataTable = ({
 
     if (column.type === 'date' || column.type === 'datetime') {
       return (
-        <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+        <div className={cellTextClass}>
           {formatCellDateValue(value, { accessor: column.accessor, type: column.type })}
         </div>
       );
@@ -161,14 +167,14 @@ const DataTable = ({
     const autoFormattedDate = formatCellDateValue(value, { accessor: column.accessor, type: column.type });
     if (autoFormattedDate !== null) {
       return (
-        <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+        <div className={cellTextClass}>
           {autoFormattedDate}
         </div>
       );
     }
 
     // Default rendering
-    return <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{value || '—'}</div>;
+    return <div className={cellTextClass}>{value || '—'}</div>;
   };
 
   const renderActions = (row) => {

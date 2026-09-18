@@ -115,7 +115,9 @@ const ServiceOrderQueuePage = ({
       });
       await reload();
       showSuccessToast(
-        fulfilledQuantity === 0 ? 'Marked unavailable — waiter notified.' : 'Marked ready — waiter notified.',
+        fulfilledQuantity === 0
+          ? 'Marked unavailable — waiter notified.'
+          : 'Marked ready — stock deducted and waiter notified.',
         fulfilledQuantity === 0 ? 'warning' : 'success'
       );
     } catch (error) {

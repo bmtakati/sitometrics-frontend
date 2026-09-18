@@ -6,7 +6,7 @@ import ServiceOrderQueuePage from './ServiceOrderQueuePage';
 const BarQueue = () => (
   <ServiceOrderQueuePage
     title="Bar Queue"
-    subtitle="Open, processed, and closed beverage orders — filter closed orders by date"
+    subtitle="Prepare beverage orders — marking ready deducts item ingredients from the bar store"
     icon={FiDroplet}
     audience="BAR"
     fetchOrders={fetchBarOrders}

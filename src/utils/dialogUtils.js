@@ -151,6 +151,17 @@ export const showRestoreConfirm = (itemName = 'this item', itemType = 'Item') =>
     iconBg: ICON_BG.restore,
   });
 
+export const showErrorToast = (message) => showErrorDialog(message);
+
+export const showWorkflowActionConfirm = ({ actionLabel, comment }) =>
+  showConfirmDialog({
+    title: `Confirm ${actionLabel || 'action'}`,
+    message: comment
+      ? `<p>Apply <strong>${actionLabel || 'this action'}</strong>?</p><p class="mt-2 whitespace-pre-wrap">${comment}</p>`
+      : `Apply <strong>${actionLabel || 'this action'}</strong>?`,
+    confirmText: actionLabel || 'Confirm',
+  });
+
 export const showWorkflowConfirm = async ({
   title,
   message = '',

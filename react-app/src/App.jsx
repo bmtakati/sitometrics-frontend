@@ -45,7 +45,6 @@ import Announcements from './pages/notifications/Announcements';
 // FAQ Pages
 import GeneralQuestions from './pages/faq/GeneralQuestions';
 import UserGuides from './pages/faq/UserGuides';
-import Troubleshooting from './pages/faq/Troubleshooting';
 import ContactSupport from './pages/faq/ContactSupport';
 
 // Geographical Pages
@@ -176,7 +175,6 @@ function AppRoutes() {
         {/* FAQ Routes */}
         <Route path="faq/general" element={<GeneralQuestions />} />
         <Route path="faq/guides" element={<UserGuides />} />
-        <Route path="faq/troubleshooting" element={<Troubleshooting />} />
         <Route path="faq/support" element={<ContactSupport />} />
         
         {/* Geographical Routes */}

@@ -2,7 +2,7 @@ import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PosModeProvider } from './context/PosModeContext';
-import { hasPermission } from './utils/permissions';
+import { crudPermissions, hasAnyPermission, hasPermission } from './utils/permissions';
 import Layout from './components/Layout/Layout';
 
 const PageLoader = () => (
@@ -21,6 +21,8 @@ const PasswordHistory = lazy(() => import('./pages/PasswordHistory'));
 const Roles = lazy(() => import('./pages/Roles'));
 const UserList = lazy(() => import('./pages/UserList'));
 const RoleHandover = lazy(() => import('./pages/RoleHandover'));
+const WorkflowTasks = lazy(() => import('./pages/workflows/WorkflowTasks'));
+const WorkflowDefinitions = lazy(() => import('./pages/workflows/WorkflowDefinitions'));
 const Profile = lazy(() => import('./pages/Profile'));
 
 // Logs Pages
@@ -32,19 +34,24 @@ const FailedLogins = lazy(() => import('./pages/logs/FailedLogins'));
 const ReportsList = lazy(() => import('./pages/reports/ReportsList'));
 const SalesReport = lazy(() => import('./pages/reports/SalesReport'));
 const SuppliersReport = lazy(() => import('./pages/reports/SuppliersReport'));
+const StockUsageReport = lazy(() => import('./pages/reports/StockUsageReport'));
+const StockPulseReport = lazy(() => import('./pages/reports/StockPulseReport'));
+const PastExpiryReport = lazy(() => import('./pages/reports/PastExpiryReport'));
+const ExpiryWatchReport = lazy(() => import('./pages/reports/ExpiryWatchReport'));
+const ReorderRadarReport = lazy(() => import('./pages/reports/ReorderRadarReport'));
 
 // Notifications Pages
 const AllNotifications = lazy(() => import('./pages/notifications/AllNotifications'));
 const Unread = lazy(() => import('./pages/notifications/Unread'));
 const SystemAlerts = lazy(() => import('./pages/notifications/SystemAlerts'));
 const Announcements = lazy(() => import('./pages/notifications/Announcements'));
+const Notifications = lazy(() => import('./pages/notifications/Notifications'));
 
 // FAQ Pages
 const GeneralQuestions = lazy(() => import('./pages/faq/GeneralQuestions'));
 const GuideTypes = lazy(() => import('./pages/faq/GuideTypes'));
 const UserGuides = lazy(() => import('./pages/faq/UserGuides'));
 const QuestionCategories = lazy(() => import('./pages/faq/QuestionCategories'));
-const Troubleshooting = lazy(() => import('./pages/faq/Troubleshooting'));
 const ContactSupport = lazy(() => import('./pages/faq/ContactSupport'));
 
 // Setup Pages
@@ -54,12 +61,12 @@ const StatusGroups = lazy(() => import('./pages/setup/StatusGroups'));
 const StatusMapping = lazy(() => import('./pages/setup/StatusMapping'));
 const FaqGeneralQuestionsAdmin = lazy(() => import('./pages/setup/FaqGeneralQuestionsAdmin'));
 const FaqUserGuidesAdmin = lazy(() => import('./pages/setup/FaqUserGuidesAdmin'));
-const FaqTroubleshootingAdmin = lazy(() => import('./pages/setup/FaqTroubleshootingAdmin'));
 const FaqContactSupportAdmin = lazy(() => import('./pages/setup/FaqContactSupportAdmin'));
 const ItemCategory = lazy(() => import('./pages/setup/ItemCategory'));
-const FoodCategory = lazy(() => import('./pages/setup/FoodCategory'));
-const BeverageCategory = lazy(() => import('./pages/setup/BeverageCategory'));
 const Item = lazy(() => import('./pages/setup/Item'));
+const MenuItem = lazy(() => import('./pages/setup/MenuItem'));
+const MenuCategories = lazy(() => import('./pages/setup/MenuCategories'));
+const MenuSubcategories = lazy(() => import('./pages/setup/MenuSubcategories'));
 const Unit = lazy(() => import('./pages/setup/Unit'));
 const Currency = lazy(() => import('./pages/setup/Currency'));
 const PaymentMethod = lazy(() => import('./pages/setup/PaymentMethod'));
@@ -79,6 +86,7 @@ const GoodsReceivedNote = lazy(() => import('./pages/procurement/GoodsReceivedNo
 const StoreRequest = lazy(() => import('./pages/procurement/StoreRequest'));
 const StoreIssue = lazy(() => import('./pages/procurement/StoreIssue'));
 const StockAdjustment = lazy(() => import('./pages/procurement/StockAdjustment'));
+const StockMovementHistory = lazy(() => import('./pages/procurement/StockMovementHistory'));
 const StockCountSession = lazy(() => import('./pages/procurement/StockCountSession'));
 const Menu = lazy(() => import('./pages/procurement/Menu'));
 const MenuRecipe = lazy(() => import('./pages/procurement/MenuRecipe'));
@@ -118,6 +126,51 @@ const ProtectedRoute = ({ children }) => {
 function AppRoutes() {
   const { isAuthenticated, loading, user } = useAuth();
   const can = (perm) => hasPermission(user, perm);
+  const canAny = (permissions) => hasAnyPermission(user, permissions);
+  const canCrud = (resource) => hasAnyPermission(user, crudPermissions(resource));
+  const canViewWorkflows = can('view-workflows') || canCrud('workflows');
+  const canViewPurchaseRequisitions = canAny([
+    ...crudPermissions('purchase-requisitions'),
+    'view-all-purchase-requisitions',
+    'submit-purchase-requisitions',
+    'verify-purchase-requisitions',
+    'approve-purchase-requisitions',
+    'reject-purchase-requisitions',
+    'convert-purchase-requisitions-to-lpo',
+  ]);
+  const canViewLocalPurchaseOrders = canAny([
+    ...crudPermissions('local-purchase-orders'),
+    'view-all-local-purchase-orders',
+    'submit-local-purchase-orders',
+    'verify-local-purchase-orders',
+    'approve-local-purchase-orders',
+    'reject-local-purchase-orders',
+    'print-local-purchase-orders',
+  ]);
+  const canViewGoodsReceivedNotes = canAny([
+    ...crudPermissions('goods-received-notes'),
+    'view-all-goods-received-notes',
+    'submit-goods-received-notes',
+    'verify-goods-received-notes',
+    'approve-goods-received-notes',
+    'reject-goods-received-notes',
+  ]);
+  const canViewStoreRequests = canAny([
+    ...crudPermissions('store-requests'),
+    'view-all-store-requests',
+    'submit-store-requests',
+    'verify-store-requests',
+    'approve-store-requests',
+    'reject-store-requests',
+  ]);
+  const canViewStoreIssues = canAny([
+    ...crudPermissions('store-issues'),
+    'view-all-store-issues',
+    'submit-store-issues',
+    'verify-store-issues',
+    'approve-store-issues',
+    'reject-store-issues',
+  ]);
 
   // Show loading screen while checking authentication
   if (loading) {
@@ -152,6 +205,10 @@ function AppRoutes() {
         <Route path="users/roles" element={can('view-roles') ? <Roles /> : <Navigate to="/dashboard" replace />} />
         <Route path="users/list" element={can('view-users') ? <UserList /> : <Navigate to="/dashboard" replace />} />
         <Route path="users/role-handover" element={can('view-role-handovers') ? <RoleHandover /> : <Navigate to="/dashboard" replace />} />
+        <Route path="workflows/pending" element={can('view-workflows') ? <WorkflowTasks defaultTab="pending" /> : <Navigate to="/dashboard" replace />} />
+        <Route path="workflows/completed" element={can('view-workflows') ? <WorkflowTasks defaultTab="completed" /> : <Navigate to="/dashboard" replace />} />
+        <Route path="workflows/my-progress" element={<Navigate to="/workflows/pending" replace />} />
+        <Route path="workflows/definitions" element={canViewWorkflows ? <WorkflowDefinitions /> : <Navigate to="/dashboard" replace />} />
         
         {/* Logs Routes */}
         <Route path="logs/audit-trail" element={<AuditTrail />} />
@@ -162,8 +219,14 @@ function AppRoutes() {
         <Route path="reports" element={can('view-reports') ? <ReportsList /> : <Navigate to="/dashboard" replace />} />
         <Route path="reports/sales" element={can('view-reports') ? <SalesReport /> : <Navigate to="/dashboard" replace />} />
         <Route path="reports/suppliers" element={can('view-reports') ? <SuppliersReport /> : <Navigate to="/dashboard" replace />} />
+        <Route path="reports/stock-usage" element={can('view-reports') ? <StockUsageReport /> : <Navigate to="/dashboard" replace />} />
+        <Route path="reports/stock-pulse" element={can('view-reports') ? <StockPulseReport /> : <Navigate to="/dashboard" replace />} />
+        <Route path="reports/past-expiry" element={can('view-reports') ? <PastExpiryReport /> : <Navigate to="/dashboard" replace />} />
+        <Route path="reports/expiry-watch" element={can('view-reports') ? <ExpiryWatchReport /> : <Navigate to="/dashboard" replace />} />
+        <Route path="reports/reorder-radar" element={can('view-reports') ? <ReorderRadarReport /> : <Navigate to="/dashboard" replace />} />
         
         {/* Notifications Routes */}
+        <Route path="notifications" element={<Notifications />} />
         <Route path="notifications/all" element={<AllNotifications />} />
         <Route path="notifications/unread" element={<Unread />} />
         <Route path="notifications/system-alerts" element={<SystemAlerts />} />
@@ -174,7 +237,6 @@ function AppRoutes() {
         <Route path="faq/guide-types" element={<GuideTypes />} />
         <Route path="faq/guides" element={<UserGuides />} />
         <Route path="faq/question-categories" element={<QuestionCategories />} />
-        <Route path="faq/troubleshooting" element={<Troubleshooting />} />
         <Route path="faq/support" element={<ContactSupport />} />
         
         {/* Setup Routes */}
@@ -184,16 +246,16 @@ function AppRoutes() {
         <Route path="setup/status-mapping" element={<StatusMapping />} />
         <Route path="setup/faq-general" element={<FaqGeneralQuestionsAdmin />} />
         <Route path="setup/faq-guides" element={<FaqUserGuidesAdmin />} />
-        <Route path="setup/faq-troubleshooting" element={<FaqTroubleshootingAdmin />} />
         <Route path="setup/faq-contact" element={<FaqContactSupportAdmin />} />
         <Route path="setup/item-category" element={<ItemCategory />} />
-        <Route path="setup/food-categories" element={<FoodCategory />} />
-        <Route path="setup/beverage-categories" element={<BeverageCategory />} />
         <Route path="setup/item" element={<Item />} />
+        <Route path="setup/menu-items" element={<MenuItem />} />
+        <Route path="setup/menu-categories" element={<MenuCategories />} />
+        <Route path="setup/menu-subcategories" element={<MenuSubcategories />} />
         <Route path="setup/unit" element={<Unit />} />
         <Route path="setup/currencies" element={<Currency />} />
-        <Route path="setup/payment-methods" element={can('manage-payment-methods') ? <PaymentMethod /> : <Navigate to="/dashboard" replace />} />
-        <Route path="setup/order-types" element={can('manage-order-types') ? <OrderType /> : <Navigate to="/dashboard" replace />} />
+        <Route path="setup/payment-methods" element={canCrud('payment-methods') ? <PaymentMethod /> : <Navigate to="/dashboard" replace />} />
+        <Route path="setup/order-types" element={canCrud('order-types') ? <OrderType /> : <Navigate to="/dashboard" replace />} />
         <Route path="setup/exchange-rates" element={<ExchangeRate />} />
         <Route path="setup/locales" element={<Locale />} />
         <Route path="setup/slideshow-slides" element={<SlideshowSlides />} />
@@ -203,16 +265,30 @@ function AppRoutes() {
         <Route path="setup/store" element={<Store />} />
         <Route
           path="procurement/purchase-requisitions"
-          element={can('view-purchase-requisitions') || can('manage-purchase-requisitions') ? <PurchaseRequisition /> : <Navigate to="/dashboard" replace />}
+          element={
+            canViewPurchaseRequisitions
+              ? <PurchaseRequisition />
+              : <Navigate to="/dashboard" replace />
+          }
         />
         <Route
           path="procurement/local-purchase-orders"
-          element={can('view-local-purchase-orders') || can('manage-local-purchase-orders') ? <LocalPurchaseOrder /> : <Navigate to="/dashboard" replace />}
+          element={canViewLocalPurchaseOrders ? <LocalPurchaseOrder /> : <Navigate to="/dashboard" replace />}
         />
-        <Route path="procurement/goods-received-notes" element={<GoodsReceivedNote />} />
-        <Route path="procurement/store-requests" element={<StoreRequest />} />
-        <Route path="procurement/store-issues" element={<StoreIssue />} />
+        <Route
+          path="procurement/goods-received-notes"
+          element={canViewGoodsReceivedNotes ? <GoodsReceivedNote /> : <Navigate to="/dashboard" replace />}
+        />
+        <Route
+          path="procurement/store-requests"
+          element={canViewStoreRequests ? <StoreRequest /> : <Navigate to="/dashboard" replace />}
+        />
+        <Route
+          path="procurement/store-issues"
+          element={canViewStoreIssues ? <StoreIssue /> : <Navigate to="/dashboard" replace />}
+        />
         <Route path="procurement/stock-adjustments" element={<StockAdjustment />} />
+        <Route path="procurement/stock-movements" element={<StockMovementHistory />} />
         <Route path="procurement/stock-count-sessions" element={<StockCountSession />} />
         <Route path="procurement/menus" element={<Menu />} />
         <Route path="procurement/menu-recipes" element={<MenuRecipe />} />

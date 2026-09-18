@@ -176,7 +176,6 @@ const Sidebar = ({ isOpen, isCollapsed, onClose }) => {
       children: [
         { id: 'general-questions', label: 'General Questions', path: '/faq/general', icon: FiMessageSquare, color: 'text-purple-600' },
         { id: 'user-guides', label: 'User Guides', path: '/faq/guides', icon: FiBook, color: 'text-blue-600' },
-        { id: 'troubleshooting', label: 'Troubleshooting', path: '/faq/troubleshooting', icon: FiAlertCircle, color: 'text-red-600' },
         { id: 'contact-support', label: 'Contact Support', path: '/faq/support', icon: FiMail, color: 'text-green-600' }
       ]
     },

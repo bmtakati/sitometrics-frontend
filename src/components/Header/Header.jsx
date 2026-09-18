@@ -7,7 +7,6 @@ import NavIconDropdown, {
 } from '../NavIconDropdown';
 import LanguageSwitcher from '../LanguageSwitcher';
 import HeaderAccentBar from '../HeaderAccentBar';
-import SitometricsLogo from '../SitometricsLogo';
 import { useThemePreference } from '../../hooks/useThemePreference';
 import { useFontSizePreference } from '../../hooks/useFontSizePreference';
 import { useLanguagePreference } from '../../hooks/useLanguagePreference';
@@ -20,6 +19,7 @@ import {
   FiSettings,
   FiLogOut,
   FiBookmark,
+  FiSearch,
 } from 'react-icons/fi';
 
 const SHOW_LOGOUT_MODAL = import.meta.env.VITE_SHOW_LOGOUT_MODAL === 'true';
@@ -39,6 +39,7 @@ const Header = ({ onMenuClick }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState('');
   const profileRef = useRef(null);
 
   // Close profile dropdown when clicking outside
@@ -134,7 +135,7 @@ const Header = ({ onMenuClick }) => {
 
   return (
     <>
-    <header className={`sticky top-0 z-30 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-slate-50 border-slate-200'} border-b shadow-sm transition-colors duration-200`}>
+    <header data-app-header="true" className={`sticky top-0 z-30 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-slate-50 border-slate-200'} border-b shadow-sm transition-colors duration-200`}>
       <div className="w-full px-2 sm:px-4 lg:px-6">
         <div className="flex items-center h-16 min-w-0 gap-2">
           {onMenuClick && (
@@ -150,8 +151,29 @@ const Header = ({ onMenuClick }) => {
             </button>
           )}
 
-          <div className="min-w-0 flex-1">
-            <SitometricsLogo darkMode={darkMode} className="max-w-[220px] sm:max-w-xs" />
+          <div className="min-w-0 flex-1 max-w-xl">
+            <label htmlFor="global-search" className="sr-only">
+              Global search
+            </label>
+            <div className="relative">
+              <FiSearch
+                className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${
+                  darkMode ? 'text-gray-400' : 'text-stone-400'
+                }`}
+              />
+              <input
+                id="global-search"
+                type="search"
+                value={globalSearch}
+                onChange={(event) => setGlobalSearch(event.target.value)}
+                placeholder="Search…"
+                className={`h-10 w-full rounded-lg border pl-9 pr-3 text-sm outline-none transition-colors focus:ring-2 focus:ring-emerald-500/40 ${
+                  darkMode
+                    ? 'border-gray-700 bg-gray-800/80 text-gray-100 placeholder:text-gray-500'
+                    : 'border-stone-200 bg-white text-stone-900 placeholder:text-stone-400'
+                }`}
+              />
+            </div>
           </div>
 
           <div className="nav-preferences flex min-w-0 items-center gap-0.5 sm:gap-1 shrink-0 ml-auto">

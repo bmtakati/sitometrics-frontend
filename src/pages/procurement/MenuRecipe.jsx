@@ -1,15 +1,24 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FiList, FiTrendingUp, FiInfo, FiGrid, FiFileText } from 'react-icons/fi';
 import { showQuickError } from '../../utils/dialogUtils';
 import useApiCrud from '../../hooks/useApiCrud';
 import CRUDPage from '../../components/CRUDPage/CRUDPage';
 import SearchableSelect from '../../components/SearchableSelect';
-import MenuCategoriesEditor, { emptyCategoryLine } from '../../components/MenuCategoriesEditor';
+import MenuCategoriesEditor from '../../components/MenuCategoriesEditor';
 import { API_BASE_URL } from '../../context/AuthContext';
 import apiFetch from '../../utils/apiFetch';
 import { formatMoney } from '../../utils/formatMoney';
-import { fetchMenuRecipe, downloadMenuPdf } from '../../utils/menuRecipeApi';
+import { downloadMenuPdf } from '../../utils/menuRecipeApi';
 import MenuContentView from '../../components/MenuContentView';
+import {
+  buildCategoryOptions,
+  buildRecipePayload,
+  emptyCategoryLine,
+  normalizeCategoryLines,
+  patchRecipeCategories,
+  validateMenuCategories,
+} from '../../utils/menuCategoriesForm';
 
 const MENU_SCOPE_LABELS = {
   FOOD: 'Food',
@@ -17,102 +26,19 @@ const MENU_SCOPE_LABELS = {
   BOTH: 'Both',
 };
 
-const buildCategoryOptions = (rows = []) =>
-  rows
-    .filter((row) => row.id != null && row.name)
-    .map((row) => ({ value: String(row.id), label: row.name }));
-
-const ingredientsToCategoryItems = (categories, ingredients) => {
-  return (categories || []).map((category) => {
-    const categoryId = Number(category.category_id);
-    const type = category.category_type || 'FOOD';
-
-    const items = (ingredients || [])
-      .filter((line) => {
-        if (type === 'BEVERAGE') {
-          return Number(line.beverage?.beverage_category_id) === categoryId;
-        }
-        return Number(line.food?.food_category_id) === categoryId;
-      })
-      .map((line) => ({
-        id: line.id,
-        food_id: line.food_id ? String(line.food_id) : '',
-        beverage_id: line.beverage_id ? String(line.beverage_id) : '',
-        quantity: line.quantity ?? '1',
-        price: line.price != null && line.price !== ''
-          ? String(line.price)
-          : String(type === 'BEVERAGE' ? line.beverage?.price : line.food?.price ?? 0),
-        remarks: line.remarks || '',
-      }));
-
-    return {
-      id: category.id,
-      category_type: type,
-      category_id: category.category_id ? String(category.category_id) : '',
-      order_no: category.order_no ?? '',
-      category: category.category,
-      items,
-    };
-  });
-};
-
 const patchRecipeRow = (row) => {
-  const categories = ingredientsToCategoryItems(row.categories || [], row.ingredients || []);
+  const categories = patchRecipeCategories(row);
 
   return {
     ...row,
     menu_id: row.menu_id ?? row.id,
-    categories: categories.length
-      ? categories
-      : (row.categories || []).map((line) => ({
-          id: line.id,
-          category_type: line.category_type || 'FOOD',
-          category_id: line.category_id ? String(line.category_id) : '',
-          order_no: line.order_no ?? '',
-          category: line.category,
-          items: line.items || [],
-        })),
+    categories,
   };
 };
 
-const normalizeCategoryLines = (categories, menuScope) =>
-  (categories || [])
-    .map((line) => ({
-      ...line,
-      category_type:
-        line.category_type || (menuScope === 'BEVERAGE' ? 'BEVERAGE' : menuScope === 'FOOD' ? 'FOOD' : ''),
-    }))
-    .filter((line) => line.category_id && Number(line.order_no) > 0);
-
-const categoriesToIngredients = (categories, menuScope) => {
-  const ingredients = [];
-
-  normalizeCategoryLines(categories, menuScope).forEach((category) => {
-    const type = category.category_type;
-
-    (category.items || []).forEach((item) => {
-      const isBeverage = type === 'BEVERAGE';
-      const hasSelection = isBeverage ? item.beverage_id : item.food_id;
-      if (!hasSelection || Number(item.quantity) <= 0) return;
-      if (!(Number(item.price) > 0)) return;
-
-      ingredients.push({
-        ...(item.id ? { id: Number(item.id) } : {}),
-        category_id: Number(category.category_id),
-        ingredient_type: type,
-        food_id: isBeverage ? null : Number(item.food_id),
-        beverage_id: isBeverage ? Number(item.beverage_id) : null,
-        quantity: Number(item.quantity),
-        price: Number(item.price) || 0,
-        remarks: item.remarks?.trim() || null,
-      });
-    });
-  });
-
-  return ingredients;
-};
-
 const MenuRecipe = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openedMenuRef = useRef(null);
   const [menus, setMenus] = useState([]);
   const [foodCategories, setFoodCategories] = useState([]);
   const [beverageCategories, setBeverageCategories] = useState([]);
@@ -182,42 +108,14 @@ const MenuRecipe = () => {
 
       const selectedMenu = menus.find((menu) => String(menu.id) === String(data.menu_id));
       const menuScope = selectedMenu?.menu_scope || 'FOOD';
+      Object.assign(errors, validateMenuCategories(data.categories, menuScope));
 
-      const validCategories = normalizeCategoryLines(data.categories, menuScope);
-
-      if (validCategories.length === 0) {
-        errors.categories = 'Add at least one category with an order number';
-      }
-
-      const categoryKeys = validCategories.map(
-        (line) => `${line.category_type}:${line.category_id}`
-      );
-      if (new Set(categoryKeys).size !== categoryKeys.length) {
-        errors.categories = 'Each category can only be added once';
-      }
-
-      const categoriesMissingItems = validCategories.filter((line) => !(line.items || []).length);
-      if (categoriesMissingItems.length) {
-        errors.categories = 'Select at least one food or beverage for each category';
-      }
-
-      const hasZeroPrice = validCategories.some((line) =>
-        (line.items || []).some((item) => !(Number(item.price) > 0))
-      );
-      if (hasZeroPrice) {
-        errors.categories = 'Set a price greater than zero for every selected item';
-      }
-
-      const ingredients = categoriesToIngredients(data.categories, menuScope);
-      if (!ingredients.length) {
-        errors.categories = 'Select at least one food or beverage to add to this menu';
-      }
-
-      const lineKeys = ingredients.map((line) =>
-        line.ingredient_type === 'BEVERAGE' ? `beverage:${line.beverage_id}` : `food:${line.food_id}`
-      );
-      if (new Set(lineKeys).size !== lineKeys.length) {
-        errors.categories = 'Each food or beverage can only be added once';
+      // Recipes always require at least one category (unlike Menu create with details only).
+      if (!errors.categories) {
+        const validCategories = normalizeCategoryLines(data.categories, menuScope);
+        if (!validCategories.length) {
+          errors.categories = 'Add at least one category with an order number';
+        }
       }
 
       return errors;
@@ -225,18 +123,7 @@ const MenuRecipe = () => {
     transformFormData: (data) => {
       const selectedMenu = menus.find((menu) => String(menu.id) === String(data.menu_id));
       const menuScope = selectedMenu?.menu_scope || 'FOOD';
-      const validCategories = normalizeCategoryLines(data.categories, menuScope);
-
-      return {
-        menu_id: Number(data.menu_id),
-        categories: validCategories.map((line) => ({
-          ...(line.id ? { id: Number(line.id) } : {}),
-          category_type: line.category_type,
-          category_id: Number(line.category_id),
-          order_no: Number(line.order_no),
-        })),
-        ingredients: categoriesToIngredients(data.categories, menuScope),
-      };
+      return buildRecipePayload(data.menu_id, data.categories, menuScope);
     },
     transformResponse: (data) => {
       if (Array.isArray(data)) return data.map(patchRecipeRow);
@@ -251,6 +138,23 @@ const MenuRecipe = () => {
     resourceName: 'Menu Recipe',
     itemsPerPage: 10,
   });
+
+  const requestedMenuId = searchParams.get('menu');
+
+  useEffect(() => {
+    if (!requestedMenuId) {
+      openedMenuRef.current = null;
+      return undefined;
+    }
+    if (openedMenuRef.current === requestedMenuId) return undefined;
+
+    openedMenuRef.current = requestedMenuId;
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('menu');
+    setSearchParams(nextParams, { replace: true });
+    crud.handleEdit({ id: requestedMenuId });
+    return undefined;
+  }, [requestedMenuId, searchParams, setSearchParams, crud]);
 
   const selectedMenu = useMemo(
     () => menus.find((menu) => String(menu.id) === String(crud.formData?.menu_id)),
@@ -354,6 +258,7 @@ const MenuRecipe = () => {
                     }}
                     placeholder="Select menu…"
                     darkMode={darkMode}
+                    disabled={crud.isEditing}
                     invalid={Boolean(errors.menu_id)}
                   />
                   {errors.menu_id ? <p className="mt-1 text-sm text-red-600">{errors.menu_id}</p> : null}
@@ -405,6 +310,7 @@ const MenuRecipe = () => {
     [
       menuOptions,
       menus,
+      crud.isEditing,
       selectedMenu,
       menuScope,
       foodCategoryOptions,

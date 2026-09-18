@@ -29,14 +29,10 @@ export function getInitialThemePreference() {
 }
 
 export function applyResolvedDarkMode(darkMode) {
-  if (darkMode) {
-    document.documentElement.classList.add('dark');
-    localStorage.setItem(DARK_MODE_KEY, 'true');
-  } else {
-    document.documentElement.classList.remove('dark');
-    localStorage.setItem(DARK_MODE_KEY, 'false');
-  }
-  window.dispatchEvent(new CustomEvent('darkModeChanged', { detail: { darkMode } }));
+  document.documentElement.classList.toggle('dark', Boolean(darkMode));
+  document.body.classList.toggle('dark', Boolean(darkMode));
+  localStorage.setItem(DARK_MODE_KEY, darkMode ? 'true' : 'false');
+  window.dispatchEvent(new CustomEvent('darkModeChanged', { detail: { darkMode: Boolean(darkMode) } }));
 }
 
 /** Persist preference and apply resolved light/dark to the document. */
@@ -44,5 +40,8 @@ export function applyThemePreference(preference) {
   localStorage.setItem(THEME_PREF_KEY, preference);
   const darkMode = resolveDarkMode(preference);
   applyResolvedDarkMode(darkMode);
+  window.dispatchEvent(new CustomEvent('themePreferenceChanged', {
+    detail: { preference, darkMode },
+  }));
   return darkMode;
 }

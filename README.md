@@ -13,7 +13,7 @@ The frontend provides role-based access to:
 - **F&B** — menus, menu recipes, consumption posting, bar transactions
 - **Users** — users, roles, permissions, password policy, role handover
 - **Logs** — audit trail, application errors, failed logins
-- **FAQ & support** — user guides, troubleshooting, contact support
+- **FAQ & support** — user guides, contact support
 - **Public landing page** — marketing content, login, module overview
 
 ## Tech stack

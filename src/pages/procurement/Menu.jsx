@@ -1,11 +1,19 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FiCoffee, FiTrendingUp, FiAlertCircle, FiTrash2, FiCheck, FiInfo, FiGrid, FiFileText } from 'react-icons/fi';
-import { showQuickError } from '../../utils/dialogUtils';
+import { showQuickError, showErrorDialog, showSuccessToast } from '../../utils/dialogUtils';
 import useApiCrud from '../../hooks/useApiCrud';
 import CRUDPage from '../../components/CRUDPage/CRUDPage';
+import MenuCategoriesEditor from '../../components/MenuCategoriesEditor';
 import MenuRecipePreview from '../../components/MenuRecipePreview';
 import { formatMoney } from '../../utils/formatMoney';
-import { downloadMenuPdf } from '../../utils/menuRecipeApi';
+import { downloadMenuPdf, fetchMenuRecipe } from '../../utils/menuRecipeApi';
+import {
+  buildCategoryOptions,
+  buildRecipePayload,
+  emptyCategoryLine,
+  patchRecipeCategories,
+  validateMenuCategories,
+} from '../../utils/menuCategoriesForm';
 import { API_BASE_URL } from '../../context/AuthContext';
 import apiFetch from '../../utils/apiFetch';
 
@@ -30,22 +38,33 @@ const emptyMenuForm = {
   selling_price: 0,
   description: '',
   status_id: '',
+  categories: [emptyCategoryLine('FOOD')],
 };
 
 const Menu = () => {
   const [exportingId, setExportingId] = useState(null);
   const [currencies, setCurrencies] = useState([]);
+  const [foodCategories, setFoodCategories] = useState([]);
+  const [beverageCategories, setBeverageCategories] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       try {
-        const res = await apiFetch(`${API_BASE_URL}/api/currencies/all`);
-        const json = await res.json().catch(() => ({}));
+        const [currencyRes, foodRes, beverageRes] = await Promise.all([
+          apiFetch(`${API_BASE_URL}/api/currencies/all`),
+          apiFetch(`${API_BASE_URL}/api/food-categories/all`),
+          apiFetch(`${API_BASE_URL}/api/beverage-categories/all`),
+        ]);
+        const [currencyJson, foodJson, beverageJson] = await Promise.all([
+          currencyRes.json().catch(() => ({})),
+          foodRes.json().catch(() => ({})),
+          beverageRes.json().catch(() => ({})),
+        ]);
         if (cancelled) return;
 
-        const rows = Array.isArray(json?.data) ? json.data : [];
+        const rows = Array.isArray(currencyJson?.data) ? currencyJson.data : [];
         setCurrencies(
           rows
             .map((row) => ({
@@ -57,8 +76,14 @@ const Menu = () => {
             }))
             .filter((row) => row.id != null && row.code)
         );
+        setFoodCategories(Array.isArray(foodJson?.data) ? foodJson.data : []);
+        setBeverageCategories(Array.isArray(beverageJson?.data) ? beverageJson.data : []);
       } catch {
-        if (!cancelled) setCurrencies([]);
+        if (!cancelled) {
+          setCurrencies([]);
+          setFoodCategories([]);
+          setBeverageCategories([]);
+        }
       }
     })();
 
@@ -76,17 +101,29 @@ const Menu = () => {
     [currencies]
   );
 
+  const foodCategoryOptions = useMemo(() => buildCategoryOptions(foodCategories), [foodCategories]);
+  const beverageCategoryOptions = useMemo(
+    () => buildCategoryOptions(beverageCategories),
+    [beverageCategories]
+  );
+
   const defaultCurrencyId = useMemo(() => {
     const base = currencies.find((currency) => currency.is_base);
     const fallback = currencies[0];
     return base?.id != null ? String(base.id) : fallback?.id != null ? String(fallback.id) : '';
   }, [currencies]);
 
-  const patchMenuRow = (row) => ({
-    ...row,
-    menu_scope: row.menu_scope || 'FOOD',
-    currency_id: row.currency_id != null ? String(row.currency_id) : defaultCurrencyId,
-  });
+  const patchMenuRow = useCallback(
+    (row) => ({
+      ...row,
+      menu_scope: row.menu_scope || 'FOOD',
+      currency_id: row.currency_id != null ? String(row.currency_id) : defaultCurrencyId,
+      categories: Array.isArray(row.categories) && row.categories.length
+        ? row.categories
+        : [emptyCategoryLine(row.menu_scope || 'FOOD')],
+    }),
+    [defaultCurrencyId]
+  );
 
   const crud = useApiCrud('menus', {
     initialFormData: emptyMenuForm,
@@ -99,6 +136,7 @@ const Menu = () => {
         errors.selling_price = 'Selling price must be 0 or more';
       }
       if (!data.status_id) errors.status_id = 'Please select a status';
+      Object.assign(errors, validateMenuCategories(data.categories, data.menu_scope || 'FOOD'));
       return errors;
     },
     transformFormData: (data) => ({
@@ -117,22 +155,138 @@ const Menu = () => {
     itemsPerPage: 10,
   });
 
-  const handleAdd = () => {
+  const saveMenuRecipe = async (menuId, formData) => {
+    const payload = buildRecipePayload(menuId, formData.categories, formData.menu_scope || 'FOOD');
+    if (!payload.categories.length || !payload.ingredients.length) return;
+
+    const response = await apiFetch(`${API_BASE_URL}/api/menu-recipes/${menuId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const err = new Error(errorData.message || 'Failed to save menu categories & items');
+      if (errorData.errors) err.fieldErrors = errorData.errors;
+      throw err;
+    }
+  };
+
+  const handleAdd = useCallback(() => {
     crud.setIsEditing(false);
+    crud.setEditingId(null);
     crud.setFormData({
       ...emptyMenuForm,
       currency_id: defaultCurrencyId,
+      categories: [emptyCategoryLine('FOOD')],
     });
     crud.setErrors({});
     crud.setShowModal(true);
-  };
+  }, [crud, defaultCurrencyId]);
+
+  const handleEdit = useCallback(
+    async (item) => {
+      try {
+        crud.setActionLoading(true);
+        const [details, recipe] = await Promise.all([
+          crud.api.fetchItemDetails(item.id),
+          fetchMenuRecipe(item.id),
+        ]);
+
+        if (!details?.success || !details?.data) {
+          throw new Error('Invalid response format');
+        }
+
+        const patched = patchMenuRow(details.data);
+        const categories = patchRecipeCategories(recipe || {});
+        crud.setFormData({
+          ...patched,
+          categories: categories.length
+            ? categories
+            : [emptyCategoryLine(patched.menu_scope || 'FOOD')],
+        });
+        crud.setEditingId(item.id);
+        crud.setIsEditing(true);
+        crud.setShowModal(true);
+        crud.setErrors({});
+      } catch {
+        showErrorDialog('Failed to load menu details');
+      } finally {
+        crud.setActionLoading(false);
+      }
+    },
+    [crud, patchMenuRow]
+  );
+
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+
+      const errors = (() => {
+        const next = {};
+        const data = crud.formData;
+        if (!data.name?.trim()) next.name = 'Menu name is required';
+        if (!data.menu_scope) next.menu_scope = 'Menu type is required';
+        if (!data.currency_id) next.currency_id = 'Please select a currency';
+        if (data.selling_price === '' || Number(data.selling_price) < 0) {
+          next.selling_price = 'Selling price must be 0 or more';
+        }
+        if (!data.status_id) next.status_id = 'Please select a status';
+        Object.assign(next, validateMenuCategories(data.categories, data.menu_scope || 'FOOD'));
+        return next;
+      })();
+
+      if (Object.keys(errors).length > 0) {
+        crud.setErrors(errors);
+        return;
+      }
+
+      try {
+        crud.setActionLoading(true);
+
+        if (crud.isEditing) {
+          await crud.api.updateItem(crud.editingId, crud.formData);
+          await saveMenuRecipe(crud.editingId, crud.formData);
+          showSuccessToast('Menu updated successfully');
+        } else {
+          const created = await crud.api.createItem(crud.formData);
+          const menuId = created?.data?.id;
+          if (menuId) {
+            await saveMenuRecipe(menuId, crud.formData);
+          }
+          showSuccessToast('Menu created successfully');
+        }
+
+        await crud.reload();
+        crud.handleCloseModal();
+      } catch (err) {
+        if (err.fieldErrors) {
+          const normalized = Object.fromEntries(
+            Object.entries(err.fieldErrors).map(([key, value]) => [
+              key,
+              Array.isArray(value) ? value[0] : value,
+            ])
+          );
+          crud.setErrors(normalized);
+        } else {
+          crud.setErrors({ submit: err.message });
+          showErrorDialog(err.message);
+        }
+      } finally {
+        crud.setActionLoading(false);
+      }
+    },
+    [crud]
+  );
 
   const menuCrud = useMemo(
     () => ({
       ...crud,
       handleAdd,
+      handleEdit,
+      handleSubmit,
     }),
-    [crud, defaultCurrencyId]
+    [crud, handleAdd, handleEdit, handleSubmit]
   );
 
   const handleExportPdf = async (row) => {
@@ -150,7 +304,7 @@ const Menu = () => {
 
   const pageConfig = {
     icon: FiCoffee,
-    title: 'Menus',
+    title: 'Menu List',
     subtitle: 'Manage menu catalog, selling prices, and exports',
     addButtonLabel: 'Add Menu',
     searchPlaceholder: 'Search menus...',
@@ -239,23 +393,27 @@ const Menu = () => {
         icon: FiGrid,
         fields: [
           {
-            name: 'menu_content_preview',
+            name: 'categories',
             type: 'custom',
             fullWidth: true,
-            render: (formData) => (
-              <div className="space-y-3">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Preview of categories and items for this menu, sorted by order number. To change items or prices, use
-                  Menu Recipes.
-                </p>
-                <MenuRecipePreview menuId={formData.id} menuValue={formData.menu_value} />
-              </div>
+            render: (formData, onInputChange, errors, darkMode) => (
+              <MenuCategoriesEditor
+                value={formData.categories}
+                onChange={onInputChange}
+                menuScope={formData.menu_scope || 'FOOD'}
+                foodCategoryOptions={foodCategoryOptions}
+                beverageCategoryOptions={beverageCategoryOptions}
+                foodCategories={foodCategories}
+                beverageCategories={beverageCategories}
+                errors={errors}
+                darkMode={darkMode}
+              />
             ),
           },
         ],
       },
     ],
-    [currencyOptions]
+    [currencyOptions, foodCategoryOptions, beverageCategoryOptions, foodCategories, beverageCategories]
   );
 
   const viewTabs = useMemo(
@@ -276,7 +434,7 @@ const Menu = () => {
             label: 'Currency',
             accessor: 'currency',
             valueRender: (item) =>
-              item.currency ? `${item.currency.code} — ${item.currency.name}` : '—',
+              (item.currency ? `${item.currency.code} — ${item.currency.name}` : '—'),
           },
           {
             label: 'Menu Value',
@@ -301,7 +459,9 @@ const Menu = () => {
             label: 'Menu content',
             accessor: 'id',
             fullWidth: true,
-            valueRender: (item) => <MenuRecipePreview menuId={item.id} menuValue={item.menu_value} />,
+            valueRender: (item) => (
+              <MenuRecipePreview menuId={item.id} menuValue={item.menu_value} />
+            ),
           },
         ],
       },

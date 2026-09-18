@@ -6,8 +6,8 @@ const MenuRecipePreview = ({
   menuId,
   menuValue,
   showTotal = true,
-  emptyMessage = 'No categories or items configured. Add them in Menu Recipes.',
-  pendingMessage = 'Save the menu first, then configure categories and items in Menu Recipes.',
+  emptyMessage = 'No categories or items configured yet.',
+  pendingMessage = 'Save the menu first, then configure categories and items.',
   className = '',
 }) => {
   const [recipe, setRecipe] = useState(null);

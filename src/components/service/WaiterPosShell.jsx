@@ -1,6 +1,10 @@
-import React from 'react';
-import { FiClipboard, FiCoffee, FiList, FiMaximize, FiMinimize, FiPlus } from 'react-icons/fi';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
+import { FiClipboard, FiCoffee, FiList, FiLogOut, FiPlus } from 'react-icons/fi';
 import { usePosMode } from '../../context/PosModeContext';
+import { useAuth } from '../../context/AuthContext';
+import PosLogoutConfirm from './PosLogoutConfirm';
 
 /**
  * Touch / POS shell for waiter: bottom tabs, large tap targets, no app chrome.
@@ -16,11 +20,32 @@ const WaiterPosShell = ({
   selectedOrderLabel,
   onExitPos,
 }) => {
-  const { enterFullscreen, exitFullscreen, isFullscreen, setPosMode } = usePosMode();
+  const { setPosMode } = usePosMode();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   const handleExit = () => {
     if (onExitPos) onExitPos();
     else setPosMode(false);
+  };
+
+  const handleLogout = () => {
+    setConfirmLogout(true);
+  };
+
+  const performLogout = async () => {
+    setConfirmLogout(false);
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+    } catch {
+      // ignore
+    }
+    setPosMode(false);
+    logout();
+    navigate('/');
   };
 
   const tabs = [
@@ -29,27 +54,32 @@ const WaiterPosShell = ({
     { id: 'detail', label: selectedOrderLabel ? 'Order' : 'Current', icon: FiClipboard },
   ];
 
-  return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-stone-100 dark:bg-stone-950">
+  return createPortal(
+    <div
+      className="fixed inset-0 flex h-[100dvh] w-screen flex-col bg-stone-100 dark:bg-stone-950"
+      style={{ zIndex: 2147483000, top: 0, left: 0, right: 0, bottom: 0 }}
+    >
       <header className="flex shrink-0 items-center gap-2 border-b border-stone-200 bg-white px-3 py-2 dark:border-stone-700 dark:bg-stone-900">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <FiCoffee className="h-5 w-5 shrink-0 text-emerald-600" />
           <div className="min-w-0 flex-1">{outletSelect}</div>
         </div>
+        {onExitPos ? (
+          <button
+            type="button"
+            onClick={handleExit}
+            className="min-h-14 rounded-xl border border-stone-200 px-4 text-base font-semibold text-stone-600 dark:border-stone-600 dark:text-stone-300"
+          >
+            Exit POS
+          </button>
+        ) : null}
         <button
           type="button"
-          onClick={() => (isFullscreen ? exitFullscreen() : enterFullscreen())}
-          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-stone-200 text-stone-600 dark:border-stone-600 dark:text-stone-300"
-          aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          onClick={handleLogout}
+          className="inline-flex min-h-14 items-center gap-2 rounded-xl bg-red-600 px-4 text-base font-semibold text-white"
         >
-          {isFullscreen ? <FiMinimize className="h-5 w-5" /> : <FiMaximize className="h-5 w-5" />}
-        </button>
-        <button
-          type="button"
-          onClick={handleExit}
-          className="min-h-11 rounded-xl border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 dark:border-stone-600 dark:text-stone-300"
-        >
-          Exit POS
+          <FiLogOut className="h-5 w-5" />
+          Logout
         </button>
       </header>
 
@@ -73,7 +103,7 @@ const WaiterPosShell = ({
                 onClick={() => onTabChange(item.id)}
                 className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-xs font-semibold transition-colors ${
                   active
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-amber-500 text-stone-950'
                     : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
                 }`}
               >
@@ -84,7 +114,13 @@ const WaiterPosShell = ({
           })}
         </div>
       </nav>
-    </div>
+      <PosLogoutConfirm
+        open={confirmLogout}
+        onCancel={() => setConfirmLogout(false)}
+        onConfirm={performLogout}
+      />
+    </div>,
+    document.body
   );
 };
 

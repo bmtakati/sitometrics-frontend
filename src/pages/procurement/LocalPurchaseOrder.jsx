@@ -1,50 +1,72 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  FiCheck,
   FiCheckCircle,
   FiClock,
   FiEdit2,
+  FiEye,
   FiFileText,
+  FiGitPullRequest,
   FiInfo,
   FiPackage,
   FiPrinter,
-  FiSend,
   FiShield,
   FiTrash2,
   FiTrendingUp,
   FiTruck,
-  FiX,
-  FiXCircle,
+  FiUsers,
 } from 'react-icons/fi';
 import useApiCrud from '../../hooks/useApiCrud';
 import CRUDPage from '../../components/CRUDPage/CRUDPage';
 import LpoItemsEditor from '../../components/LpoItemsEditor';
+import PageTabs from '../../components/PageTabs';
 import SearchableSelect from '../../components/SearchableSelect';
 import WorkflowStatusPill from '../../components/WorkflowStatusPill';
+import WorkflowTaskModal from '../../components/workflow/WorkflowTaskModal';
 import { API_BASE_URL, useAuth } from '../../context/AuthContext';
 import apiFetch from '../../utils/apiFetch';
 import { formatDate, formatDateTime } from '../../utils/formatDate';
-import { hasPermission } from '../../utils/permissions';
+import { crudPermissions, hasAnyPermission, hasPermission } from '../../utils/permissions';
+import { publicKey } from '../../utils/publicKey';
 import {
   showQuickError,
   showQuickSuccess,
   showWorkflowConfirm,
 } from '../../utils/dialogUtils';
 import {
-  approveLocalPurchaseOrder,
   canPrintLocalPurchaseOrder,
   downloadLocalPurchaseOrderPdf,
-  rejectLocalPurchaseOrder,
+  ensureLocalPurchaseOrderWorkflow,
   sendLocalPurchaseOrder,
-  submitLocalPurchaseOrder,
-  verifyLocalPurchaseOrder,
 } from '../../utils/localPurchaseOrderApi';
 
-const EDITABLE_STATUSES = ['DRAFT', 'REJECTED'];
+const EDITABLE_STATUSES = ['DRAFT', 'REJECTED', 'RETURNED'];
 
 const emptyLine = () => ({ item_id: '', quantity: '', unit_price: '' });
 
 const getSupplierItems = (supplier) => supplier?.supplier_items || supplier?.supplierItems || [];
+
+const itemUnitRows = (item) => item?.item_units || item?.itemUnits || [];
+
+const purchaseUnitRows = (item) => {
+  const rows = itemUnitRows(item).filter((row) => row.is_active !== false && row.is_purchase_unit);
+  return rows.length ? rows : itemUnitRows(item);
+};
+
+const unitOptionLabel = (unit) => {
+  if (!unit) return '';
+  if (unit.name && unit.symbol && unit.name !== unit.symbol) {
+    return `${unit.name} (${unit.symbol})`;
+  }
+  return unit.symbol || unit.name || '';
+};
+
+const purchaseUnitLabel = (item, itemUnitId = null) => {
+  const rows = purchaseUnitRows(item);
+  const selected = itemUnitId
+    ? rows.find((row) => String(row.id) === String(itemUnitId))
+    : rows.find((row) => row.is_default_purchase) || rows[0];
+  return unitOptionLabel(selected?.unit) || unitOptionLabel(item?.unit);
+};
 
 const hasAgreedPriceItems = (supplier) =>
   getSupplierItems(supplier).some((line) => {
@@ -56,19 +78,22 @@ const hasAgreedPriceItems = (supplier) =>
 const buildSupplierCatalog = (supplier) => {
   const itemOptions = [];
   const priceByItemId = {};
+  const purchaseUnitByItemId = {};
 
   for (const line of getSupplierItems(supplier)) {
     const item = line.item;
     if (!item?.id) continue;
     const id = String(item.id);
+    const purchaseUnit = purchaseUnitLabel(item);
     itemOptions.push({
       value: id,
-      label: `${item.name}${item.code ? ` (${item.code})` : ''}`,
+      label: `${item.name}${item.code ? ` (${item.code})` : ''}${purchaseUnit ? ` · ${purchaseUnit}` : ''}`,
     });
     priceByItemId[id] = line.agreed_price;
+    purchaseUnitByItemId[id] = purchaseUnit || '—';
   }
 
-  return { itemOptions, priceByItemId };
+  return { itemOptions, priceByItemId, purchaseUnitByItemId };
 };
 
 const remapLinesForSupplier = (lines, priceByItemId) => {
@@ -92,6 +117,7 @@ const buildLinesFromRequisition = (requisition, priceByItemId) => {
     .filter((line) => line.item_id && priceByItemId[String(line.item_id)] != null)
     .map((line) => ({
       item_id: String(line.item_id),
+      item_unit_id: line.item_unit_id ? String(line.item_unit_id) : '',
       quantity: line.quantity ?? '',
       unit_price: priceByItemId[String(line.item_id)],
     }));
@@ -104,18 +130,33 @@ const formatMoney = (value) =>
 
 const LocalPurchaseOrder = () => {
   const { user } = useAuth();
-  const canManage = hasPermission(user, 'manage-local-purchase-orders');
-  const canView = canManage || hasPermission(user, 'view-local-purchase-orders');
-  const canCreate = canManage || hasPermission(user, 'create-local-purchase-orders');
-  const canSubmit = canManage || hasPermission(user, 'submit-local-purchase-orders');
-  const canVerify = canManage || hasPermission(user, 'verify-local-purchase-orders');
-  const canApprove = canManage || hasPermission(user, 'approve-local-purchase-orders');
-  const canReject = canManage || hasPermission(user, 'reject-local-purchase-orders');
-  const canPrint = canManage || hasPermission(user, 'print-local-purchase-orders');
+  const canViewAll = hasPermission(user, 'view-all-local-purchase-orders');
+  const canCreate = hasPermission(user, 'add-local-purchase-orders');
+  const canEdit = hasPermission(user, 'edit-local-purchase-orders');
+  const canDelete = hasPermission(user, 'delete-local-purchase-orders');
+  const canRestore = hasPermission(user, 'restore-local-purchase-orders');
+  const canSubmit = hasPermission(user, 'submit-local-purchase-orders');
+  const canVerify = hasPermission(user, 'verify-local-purchase-orders');
+  const canApprove = hasPermission(user, 'approve-local-purchase-orders');
+  const canReject = hasPermission(user, 'reject-local-purchase-orders');
+  const canPrint = hasPermission(user, 'print-local-purchase-orders');
+  const canView = hasAnyPermission(user, crudPermissions('local-purchase-orders'))
+    || canViewAll
+    || hasPermission(user, 'view-local-purchase-orders')
+    || canSubmit
+    || canVerify
+    || canApprove
+    || canReject
+    || canPrint;
 
   const [suppliers, setSuppliers] = useState([]);
   const [approvedRequisitions, setApprovedRequisitions] = useState([]);
   const [printingId, setPrintingId] = useState(null);
+  const [workflowModalOpen, setWorkflowModalOpen] = useState(false);
+  const [workflowInstanceKey, setWorkflowInstanceKey] = useState(null);
+  const [workflowModalReadOnly, setWorkflowModalReadOnly] = useState(false);
+  const [ownershipTab, setOwnershipTab] = useState('mine');
+  const viewingOthers = canViewAll && ownershipTab === 'others';
 
   useEffect(() => {
     const loadSuppliers = async () => {
@@ -130,11 +171,12 @@ const LocalPurchaseOrder = () => {
     loadSuppliers();
   }, []);
 
-  const loadApprovedRequisitions = useCallback(async ({ exceptLpoId = null, includeRequisitionId = null } = {}) => {
+  const loadApprovedRequisitions = useCallback(async ({ exceptLpoId = null, includeRequisitionId = null, supplierId = null } = {}) => {
     try {
       const params = new URLSearchParams();
       if (exceptLpoId) params.set('except_lpo_id', String(exceptLpoId));
       if (includeRequisitionId) params.set('include_requisition_id', String(includeRequisitionId));
+      if (supplierId) params.set('supplier_id', String(supplierId));
       const qs = params.toString();
       const res = await apiFetch(`${API_BASE_URL}/api/purchase-requisitions/approved-for-lpo${qs ? `?${qs}` : ''}`);
       const payload = await res.json();
@@ -154,13 +196,12 @@ const LocalPurchaseOrder = () => {
       discount_amount: 0,
       remarks: '',
       lpo_items: [emptyLine()],
-      status_id: '',
     },
+    initialExtraListParams: canViewAll ? { ownership: 'mine' } : {},
     validateForm: (data) => {
       const errors = {};
       if (!data.supplier_id) errors.supplier_id = 'Supplier is required';
       if (!data.order_date) errors.order_date = 'Order date is required';
-      if (!data.status_id) errors.status_id = 'Please select a status';
 
       const supplier = suppliers.find((row) => String(row.id) === String(data.supplier_id));
       if (supplier && !hasAgreedPriceItems(supplier)) {
@@ -200,6 +241,7 @@ const LocalPurchaseOrder = () => {
         )
         .map((line) => ({
           item_id: Number(line.item_id),
+          item_unit_id: line.item_unit_id ? Number(line.item_unit_id) : null,
           quantity: Number(line.quantity),
           unit_price: Number(priceByItemId[String(line.item_id)]),
           tax_amount: 0,
@@ -214,7 +256,6 @@ const LocalPurchaseOrder = () => {
         tax_amount: Number(data.tax_amount || 0),
         discount_amount: Number(data.discount_amount || 0),
         remarks: data.remarks || null,
-        status_id: Number(data.status_id),
         items,
       };
     },
@@ -226,7 +267,10 @@ const LocalPurchaseOrder = () => {
         lpo_items: Array.isArray(row?.items)
           ? row.items.map((line) => ({
               item_id: String(line.item_id),
+              item_unit_id: line.item_unit_id ? String(line.item_unit_id) : '',
               quantity: line.quantity,
+              conversion_factor: line.conversion_factor,
+              base_quantity: line.base_quantity,
               unit_price: line.unit_price,
             }))
           : [emptyLine()],
@@ -234,6 +278,10 @@ const LocalPurchaseOrder = () => {
       return Array.isArray(payload) ? payload.map(normalize) : normalize(payload);
     },
     resourceName: 'Local Purchase Order',
+    canAdd: canCreate,
+    canEdit,
+    canDelete,
+    canRestore,
     itemsPerPage: 10,
     enrichStats: ({ stats }) => ({
       ...stats,
@@ -246,6 +294,19 @@ const LocalPurchaseOrder = () => {
       closed: Number(stats?.closed || 0),
     }),
   });
+
+  useEffect(() => {
+    if (!canViewAll) {
+      crud.setExtraListParams({});
+      return;
+    }
+    crud.setExtraListParams({ ownership: ownershipTab === 'others' ? 'others' : 'mine' });
+    crud.handlePageChange(1);
+  }, [canViewAll, ownershipTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleOwnershipTabChange = (tabId) => {
+    setOwnershipTab(tabId);
+  };
 
   const runWorkflowAction = useCallback(
     async (row, { label, fn, confirmText, inputLabel }) => {
@@ -283,6 +344,65 @@ const LocalPurchaseOrder = () => {
     }
   };
 
+  const workflowInstanceForRow = useCallback((row) => {
+    return row?.active_workflow_instance
+      || row?.activeWorkflowInstance
+      || (Array.isArray(row.workflow_instances) ? row.workflow_instances[0] : null)
+      || (Array.isArray(row.workflowInstances) ? row.workflowInstances[0] : null);
+  }, []);
+
+  const workflowInstanceKeyForRow = useCallback(
+    (row) => {
+      const instance = workflowInstanceForRow(row);
+      return publicKey(instance) || instance?.uid || instance?.id || row?.workflow_instance_id || null;
+    },
+    [workflowInstanceForRow]
+  );
+
+  const canActOnLpoWorkflow = useCallback((row) => {
+    if (!row) return false;
+    if (EDITABLE_STATUSES.includes(row.workflow_status)) {
+      return canSubmit;
+    }
+    if (['SENT', 'PARTIALLY_DELIVERED', 'FULLY_DELIVERED', 'CLOSED', 'APPROVED'].includes(row.workflow_status)) {
+      return false;
+    }
+    if (row.workflow_status === 'SUBMITTED') {
+      return canVerify || canReject;
+    }
+    if (row.workflow_status === 'VERIFIED') {
+      return canApprove || canReject;
+    }
+    return canVerify || canApprove || canReject;
+  }, [canApprove, canReject, canSubmit, canVerify]);
+
+  const openWorkflowModal = useCallback(
+    async (row, { readOnly = false } = {}) => {
+      try {
+        let instanceKey = workflowInstanceKeyForRow(row);
+        const trackingOnly = readOnly || !canActOnLpoWorkflow(row);
+
+        if (!instanceKey && !trackingOnly && canSubmit && EDITABLE_STATUSES.includes(row.workflow_status)) {
+          const instance = await ensureLocalPurchaseOrderWorkflow(row.id);
+          await crud.reload();
+          instanceKey = instance?.uid || instance?.slug || publicKey(instance) || instance?.id;
+        }
+
+        if (!instanceKey) {
+          showQuickError('Workflow unavailable', 'No workflow task is available for this local purchase order.');
+          return;
+        }
+
+        setWorkflowModalReadOnly(trackingOnly);
+        setWorkflowInstanceKey(instanceKey);
+        setWorkflowModalOpen(true);
+      } catch (error) {
+        showQuickError('Workflow unavailable', error.message);
+      }
+    },
+    [canActOnLpoWorkflow, canSubmit, crud, workflowInstanceKeyForRow]
+  );
+
   const supplierOptions = useMemo(() => {
     const currentSupplierId = crud.formData?.supplier_id ? String(crud.formData.supplier_id) : '';
 
@@ -294,17 +414,29 @@ const LocalPurchaseOrder = () => {
       }));
   }, [suppliers, crud.formData?.supplier_id]);
 
+  const selectedSupplier = useMemo(
+    () => suppliers.find((row) => String(row.id) === String(crud.formData?.supplier_id)),
+    [suppliers, crud.formData?.supplier_id]
+  );
+
   useEffect(() => {
-    if (!crud.showModal) return;
+    if (!crud.showModal) {
+      setApprovedRequisitions([]);
+      return;
+    }
+    const supplierId = crud.formData?.supplier_id ? String(crud.formData.supplier_id) : '';
     loadApprovedRequisitions({
       exceptLpoId: crud.isEditing ? crud.editingId : null,
       includeRequisitionId: crud.isEditing ? crud.formData?.purchase_requisition_id : null,
+      // Without a supplier, still list all approved PRs so users can see what is ready.
+      supplierId: supplierId || null,
     });
   }, [
     crud.showModal,
     crud.isEditing,
     crud.editingId,
     crud.formData?.purchase_requisition_id,
+    crud.formData?.supplier_id,
     loadApprovedRequisitions,
   ]);
 
@@ -322,12 +454,7 @@ const LocalPurchaseOrder = () => {
     [approvedRequisitions]
   );
 
-  const selectedSupplier = useMemo(
-    () => suppliers.find((row) => String(row.id) === String(crud.formData?.supplier_id)),
-    [suppliers, crud.formData?.supplier_id]
-  );
-
-  const { itemOptions, priceByItemId } = useMemo(
+  const { itemOptions, priceByItemId, purchaseUnitByItemId } = useMemo(
     () => buildSupplierCatalog(selectedSupplier),
     [selectedSupplier]
   );
@@ -413,12 +540,23 @@ const LocalPurchaseOrder = () => {
   const pageConfig = {
     icon: FiFileText,
     title: 'Local Purchase Orders',
-    subtitle: 'Create LPOs, verify line items, approve, and print purchase orders',
-    addButtonLabel: 'Add LPO',
+    subtitle: viewingOthers
+      ? 'Track status of local purchase orders created by other users'
+      : 'Draft LPOs, then process verification and approval through workflow',
+    addButtonLabel: 'Create LPO',
     searchPlaceholder: 'Search LPOs...',
-    hideAddButton: !canCreate,
+    hideAddButton: !canCreate || viewingOthers,
     hideActions: ['edit', 'delete'],
   };
+
+  const ownershipTabs = useMemo(() => (
+    canViewAll
+      ? [
+          { id: 'mine', label: 'My LPOs', icon: FiFileText },
+          { id: 'others', label: 'Other LPOs', icon: FiUsers },
+        ]
+      : []
+  ), [canViewAll]);
 
   const statsConfig = {
     cards: [
@@ -438,6 +576,14 @@ const LocalPurchaseOrder = () => {
       render: (row) => row.supplier?.name || row.supplier_id || '—',
     },
     { header: 'Order Date', accessor: 'order_date', type: 'date', noWrap: true },
+    ...(viewingOthers
+      ? [{
+          header: 'Created By',
+          accessor: 'creator.full_name',
+          noWrap: true,
+          render: (row) => row.creator?.full_name || '—',
+        }]
+      : []),
     {
       header: 'Lines',
       accessor: 'items',
@@ -445,7 +591,6 @@ const LocalPurchaseOrder = () => {
       render: (row) => (Array.isArray(row.items) ? row.items.length : 0),
     },
     { header: 'Workflow', accessor: 'workflow_status', noWrap: true, render: (row) => <WorkflowStatusPill status={row.workflow_status} /> },
-    { header: 'Status', accessor: 'status', type: 'status', noWrap: true },
   ];
 
   const formTabs = [
@@ -500,14 +645,22 @@ const LocalPurchaseOrder = () => {
                 options={requisitionOptions}
                 value={formData.purchase_requisition_id ? String(formData.purchase_requisition_id) : ''}
                 onChange={(val) => handleRequisitionChange(val, onInputChange, formData)}
-                placeholder={requisitionOptions.length ? 'Select approved requisition…' : 'No approved requisitions available'}
+                placeholder={
+                  requisitionOptions.length
+                    ? 'Select approved requisition…'
+                    : formData.supplier_id
+                      ? 'No approved requisitions match this supplier catalog'
+                      : 'No approved requisitions available'
+                }
                 darkMode={darkMode}
                 disabled={!requisitionOptions.length}
               />
               <p className={`mt-1 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
                 {formData.purchase_requisition_id
                   ? 'Line items are locked to the approved requisition quantities.'
-                  : 'Optional. Selecting a requisition pre-fills line items from the supplier contract.'}
+                  : formData.supplier_id
+                    ? 'Optional. Only approved requisitions with items on this supplier contract are listed.'
+                    : 'Optional. Select a supplier that stocks the requisition items (e.g. Ocean Beverages for beer).'}
               </p>
             </div>
           ),
@@ -516,13 +669,12 @@ const LocalPurchaseOrder = () => {
         { name: 'expected_delivery_date', label: 'Expected Delivery Date', type: 'date', required: false },
         { name: 'tax_amount', label: 'Tax Amount', type: 'number', min: 0, step: '0.01', required: false },
         { name: 'discount_amount', label: 'Discount Amount', type: 'number', min: 0, step: '0.01', required: false },
-        { name: 'status_id', label: 'Status', type: 'status_id', required: true },
         { name: 'remarks', label: 'Remarks', type: 'textarea', rows: 3, required: false },
       ],
     },
     {
       id: 'lines',
-      label: 'Line Items',
+      label: 'Order Items',
       icon: FiPackage,
       fields: [
         {
@@ -535,6 +687,7 @@ const LocalPurchaseOrder = () => {
               onChange={onInputChange}
               itemOptions={itemOptions}
               priceByItemId={priceByItemId}
+              purchaseUnitByItemId={purchaseUnitByItemId}
               supplierSelected={Boolean(formData.supplier_id)}
               lockedFromRequisition={Boolean(formData.purchase_requisition_id)}
               errors={errors}
@@ -576,16 +729,15 @@ const LocalPurchaseOrder = () => {
         { label: 'Tax Amount', accessor: 'tax_amount', valueRender: (item) => formatMoney(item.tax_amount || 0) },
         { label: 'Discount', accessor: 'discount_amount', valueRender: (item) => formatMoney(item.discount_amount || 0) },
         { label: 'Remarks', accessor: 'remarks', type: 'textarea' },
-        { label: 'Status', accessor: 'status', type: 'status' },
       ],
     },
     {
       id: 'lines',
-      label: 'Line Items',
+      label: 'Order Items',
       icon: FiPackage,
       fields: [
         {
-          label: 'Order lines',
+          label: 'Order items',
           accessor: 'items',
           fullWidth: true,
           valueRender: (item) => {
@@ -599,6 +751,7 @@ const LocalPurchaseOrder = () => {
                       <th className="px-3 py-2">Item</th>
                       <th className="px-3 py-2">Code</th>
                       <th className="px-3 py-2">Qty</th>
+                      <th className="px-3 py-2">Purchasing unit</th>
                       <th className="px-3 py-2">Unit price</th>
                       <th className="px-3 py-2">Line total</th>
                     </tr>
@@ -609,6 +762,11 @@ const LocalPurchaseOrder = () => {
                         <td className="px-3 py-2">{line.item?.name || line.item_id}</td>
                         <td className="px-3 py-2">{line.item?.code || '—'}</td>
                         <td className="px-3 py-2">{line.quantity}</td>
+                        <td className="px-3 py-2">
+                          {purchaseUnitLabel(line.item, line.item_unit_id)
+                            || unitOptionLabel(line.item_unit?.unit || line.itemUnit?.unit)
+                            || '—'}
+                        </td>
                         <td className="px-3 py-2">{formatMoney(line.unit_price || 0)}</td>
                         <td className="px-3 py-2 font-medium">
                           {formatMoney(Number(line.quantity || 0) * Number(line.unit_price || 0))}
@@ -675,67 +833,30 @@ const LocalPurchaseOrder = () => {
   const extraActions = [
     {
       type: 'edit',
-      label: 'Edit',
+      label: (row) => (row.workflow_status === 'DRAFT' ? 'Edit Draft' : 'Edit'),
       icon: FiEdit2,
-      visible: (row) => canCreate && EDITABLE_STATUSES.includes(row.workflow_status),
+      visible: (row) => !viewingOthers && canEdit && EDITABLE_STATUSES.includes(row.workflow_status),
       onClick: (row) => crud.handleEdit(row),
     },
     {
-      type: 'submit',
-      label: 'Submit',
-      icon: FiSend,
-      visible: (row) => canSubmit && EDITABLE_STATUSES.includes(row.workflow_status),
-      onClick: (row) =>
-        runWorkflowAction(row, {
-          label: 'Submit',
-          fn: submitLocalPurchaseOrder,
-          confirmText: 'Submit this LPO for verification?',
-        }),
+      type: 'workflow',
+      label: 'Process',
+      icon: FiGitPullRequest,
+      visible: (row) => !viewingOthers && canActOnLpoWorkflow(row),
+      onClick: (row) => openWorkflowModal(row, { readOnly: false }),
     },
     {
-      type: 'verify',
-      label: 'Verify',
-      icon: FiShield,
-      visible: (row) => canVerify && row.workflow_status === 'SUBMITTED',
-      onClick: (row) =>
-        runWorkflowAction(row, {
-          label: 'Verify',
-          fn: verifyLocalPurchaseOrder,
-          confirmText: 'Verify this LPO before approval?',
-          inputLabel: 'Verification remarks',
-        }),
-    },
-    {
-      type: 'approve',
-      label: 'Approve',
-      icon: FiCheck,
-      visible: (row) => canApprove && row.workflow_status === 'VERIFIED',
-      onClick: (row) =>
-        runWorkflowAction(row, {
-          label: 'Approve',
-          fn: approveLocalPurchaseOrder,
-          confirmText: 'Approve this verified LPO?',
-          inputLabel: 'Approval remarks',
-        }),
-    },
-    {
-      type: 'reject',
-      label: 'Reject',
-      icon: FiX,
-      visible: (row) => canReject && ['SUBMITTED', 'VERIFIED'].includes(row.workflow_status),
-      onClick: (row) =>
-        runWorkflowAction(row, {
-          label: 'Reject',
-          fn: rejectLocalPurchaseOrder,
-          confirmText: 'Reject this LPO?',
-          inputLabel: 'Rejection reason',
-        }),
+      type: 'workflow-progress',
+      label: 'Progress',
+      icon: FiEye,
+      visible: (row) => Boolean(workflowInstanceKeyForRow(row)) && (viewingOthers || !canActOnLpoWorkflow(row)),
+      onClick: (row) => openWorkflowModal(row, { readOnly: true }),
     },
     {
       type: 'send',
       label: 'Send to Supplier',
       icon: FiTruck,
-      visible: (row) => canManage && row.workflow_status === 'APPROVED',
+      visible: (row) => !viewingOthers && canEdit && row.workflow_status === 'APPROVED',
       onClick: (row) =>
         runWorkflowAction(row, {
           label: 'Send',
@@ -755,7 +876,7 @@ const LocalPurchaseOrder = () => {
       type: 'delete',
       label: 'Delete',
       icon: FiTrash2,
-      visible: (row) => canCreate && row.workflow_status === 'DRAFT',
+      visible: (row) => !viewingOthers && canDelete && row.workflow_status === 'DRAFT',
       onClick: (row) => crud.handleDelete(row),
     },
   ];
@@ -769,30 +890,53 @@ const LocalPurchaseOrder = () => {
   }
 
   return (
-    <CRUDPage
-      pageConfig={pageConfig}
-      statsConfig={statsConfig}
-      tableColumns={tableColumns}
-      formTabs={formTabs}
-      viewTabs={viewTabs}
-      modalTitle="Local Purchase Order"
-      modalMaxWidth="max-w-4xl"
-      crud={crud}
-      extraActions={extraActions}
-      filterOptions={[
-        { label: 'All', value: 'all' },
-        { label: 'Workflow: Draft', value: 'workflow:DRAFT' },
-        { label: 'Workflow: Submitted', value: 'workflow:SUBMITTED' },
-        { label: 'Workflow: Verified', value: 'workflow:VERIFIED' },
-        { label: 'Workflow: Approved', value: 'workflow:APPROVED' },
-        { label: 'Workflow: Rejected', value: 'workflow:REJECTED' },
-        { label: 'Workflow: Sent', value: 'workflow:SENT' },
-        { label: 'Workflow: Partially Delivered', value: 'workflow:PARTIALLY_DELIVERED' },
-        { label: 'Workflow: Fully Delivered', value: 'workflow:FULLY_DELIVERED' },
-        { label: 'Workflow: Closed', value: 'workflow:CLOSED' },
-        { label: 'Trashed', value: 'trashed' },
-      ]}
-    />
+    <>
+      <CRUDPage
+        pageConfig={pageConfig}
+        statsConfig={statsConfig}
+        tableColumns={tableColumns}
+        formTabs={formTabs}
+        viewTabs={viewTabs}
+        modalTitle="Local Purchase Order"
+        modalMaxWidth="max-w-4xl"
+        crud={crud}
+        submitLabel={crud.isEditing ? 'Save Changes' : 'Save as Draft'}
+        extraActions={extraActions}
+        belowStats={ownershipTabs.length ? (
+          <PageTabs
+            tabs={ownershipTabs}
+            activeTab={ownershipTab}
+            onChange={handleOwnershipTabChange}
+            ariaLabel="Local purchase order ownership"
+          />
+        ) : null}
+        filterOptions={[
+          { label: 'All', value: 'all' },
+          { label: 'Workflow: Draft', value: 'workflow:DRAFT' },
+          { label: 'Workflow: Submitted', value: 'workflow:SUBMITTED' },
+          { label: 'Workflow: Verified', value: 'workflow:VERIFIED' },
+          { label: 'Workflow: Approved', value: 'workflow:APPROVED' },
+          { label: 'Workflow: Rejected', value: 'workflow:REJECTED' },
+          { label: 'Workflow: Returned', value: 'workflow:RETURNED' },
+          { label: 'Workflow: Sent', value: 'workflow:SENT' },
+          { label: 'Workflow: Partially Delivered', value: 'workflow:PARTIALLY_DELIVERED' },
+          { label: 'Workflow: Fully Delivered', value: 'workflow:FULLY_DELIVERED' },
+          { label: 'Workflow: Closed', value: 'workflow:CLOSED' },
+          { label: 'Trashed', value: 'trashed' },
+        ]}
+      />
+      <WorkflowTaskModal
+        isOpen={workflowModalOpen}
+        onClose={() => {
+          setWorkflowModalOpen(false);
+          setWorkflowInstanceKey(null);
+          setWorkflowModalReadOnly(false);
+        }}
+        instanceKey={workflowInstanceKey}
+        onCompleted={crud.reload}
+        readOnly={workflowModalReadOnly}
+      />
+    </>
   );
 };
 

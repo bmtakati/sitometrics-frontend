@@ -9,6 +9,7 @@ const LpoItemsEditor = ({
   onChange,
   itemOptions = [],
   priceByItemId = {},
+  purchaseUnitByItemId = {},
   supplierSelected = false,
   lockedFromRequisition = false,
   errors = {},
@@ -57,10 +58,15 @@ const LpoItemsEditor = ({
     return formatMoney(qty * price);
   };
 
+  const purchasingUnit = (line) => {
+    if (!line?.item_id) return '—';
+    return purchaseUnitByItemId[String(line.item_id)] || '—';
+  };
+
   if (!supplierSelected) {
     return (
       <div className={`rounded-xl border border-dashed px-4 py-6 text-center text-sm ${borderClass} ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-        Select a supplier first to add line items from their agreed price list.
+        Select a supplier first to add order items from their agreed price list.
       </div>
     );
   }
@@ -73,15 +79,19 @@ const LpoItemsEditor = ({
     );
   }
 
+  const gridCols = lockedFromRequisition
+    ? 'grid-cols-[minmax(0,1.4fr)_90px_120px_110px_110px]'
+    : 'grid-cols-[minmax(0,1.4fr)_90px_120px_110px_110px_40px]';
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <p className={`text-sm font-medium ${labelClass}`}>Order lines</p>
+          <p className={`text-sm font-medium ${labelClass}`}>Order items</p>
           <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
             {lockedFromRequisition
-              ? 'Quantities and items are fixed from the approved purchase requisition.'
-              : 'Items and unit prices come from the selected supplier\'s contract.'}
+              ? 'Quantities and items are fixed from the approved purchase requisition. Units are purchasing units.'
+              : 'Items and unit prices come from the selected supplier contract. Quantities use purchasing units.'}
           </p>
         </div>
         {!lockedFromRequisition ? (
@@ -91,7 +101,7 @@ const LpoItemsEditor = ({
             className="inline-flex items-center gap-1 rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 dark:border-emerald-500 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
           >
             <FiPlus className="h-3.5 w-3.5" />
-            Add line
+            Add item
           </button>
         ) : null}
       </div>
@@ -104,7 +114,7 @@ const LpoItemsEditor = ({
               : 'border-indigo-200 bg-indigo-50 text-indigo-800'
           }`}
         >
-          Linked to an approved purchase requisition — line items cannot be changed on this order.
+          Linked to an approved purchase requisition — order items cannot be changed on this order.
         </div>
       ) : null}
 
@@ -117,16 +127,13 @@ const LpoItemsEditor = ({
       ) : (
       <div className={`overflow-x-auto rounded-xl border ${borderClass}`}>
         <div
-          className={`grid min-w-[640px] ${
-            lockedFromRequisition
-              ? 'grid-cols-[1fr_100px_120px_120px]'
-              : 'grid-cols-[1fr_100px_120px_120px_40px]'
-          } gap-2 border-b px-3 py-2 text-xs font-semibold uppercase tracking-wide ${
+          className={`grid min-w-[720px] ${gridCols} gap-2 border-b px-3 py-2 text-xs font-semibold uppercase tracking-wide ${
             darkMode ? 'border-gray-600 bg-gray-800/60 text-gray-400' : 'border-gray-200 bg-gray-50 text-gray-500'
           }`}
         >
           <span>Item</span>
           <span>Qty</span>
+          <span>Purchasing unit</span>
           <span>Unit price</span>
           <span>Line total</span>
           {!lockedFromRequisition ? <span /> : null}
@@ -134,11 +141,7 @@ const LpoItemsEditor = ({
         {(lockedFromRequisition ? visibleLines : lines).map((line, index) => (
           <div
             key={`lpo-item-${index}`}
-            className={`grid min-w-[640px] ${
-              lockedFromRequisition
-                ? 'grid-cols-[1fr_100px_120px_120px]'
-                : 'grid-cols-[1fr_100px_120px_120px_40px]'
-            } gap-2 border-b px-3 py-2 last:border-b-0 ${
+            className={`grid min-w-[720px] ${gridCols} gap-2 border-b px-3 py-2 last:border-b-0 ${
               darkMode ? 'border-gray-700' : 'border-gray-100'
             }`}
           >
@@ -161,6 +164,9 @@ const LpoItemsEditor = ({
               readOnly={lockedFromRequisition}
               className={lockedFromRequisition ? readOnlyClass : inputClass}
             />
+            <div className={`flex h-[38px] items-center px-1 text-sm ${labelClass}`}>
+              {purchasingUnit(line)}
+            </div>
             <input
               type="text"
               readOnly
@@ -177,7 +183,7 @@ const LpoItemsEditor = ({
                 onClick={() => removeLine(index)}
                 disabled={lines.length === 1}
                 className="flex h-[38px] w-[38px] items-center justify-center rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-40 dark:hover:bg-red-950/30"
-                aria-label="Remove line"
+                aria-label="Remove item"
               >
                 <FiTrash2 className="h-4 w-4" />
               </button>

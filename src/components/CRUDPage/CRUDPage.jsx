@@ -76,9 +76,13 @@ const CRUDPage = ({
   ,
   // Optional extra filter UI (e.g. email) to render on the right side of the table controls.
   emailFilter = null,
+  extraFilters = null,
   // Controls how FormModal lays out fields inside the create/edit modal.
   // 'stack', 'two-col' (default), or 'three-col'.
-  formFieldsLayout = 'two-col'
+  formFieldsLayout = 'two-col',
+
+  // Optional create/edit modal submit button label (FormModal default if omitted).
+  submitLabel,
 }) => {
   const {
     data,
@@ -107,17 +111,36 @@ const CRUDPage = ({
     handleItemsPerPageChange,
     handleInputChange,
     handleAdd,
-    reload
+    reload,
+    fetchItemDetails,
+    transformResponse,
   } = crud;
 
   // View modal state
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingItem, setViewingItem] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
-  // Handle view action
-  const handleView = (item) => {
-    setViewingItem(item);
-    setShowViewModal(true);
+  // Handle view action — fetch full details when available (e.g. workflow comments)
+  const handleView = async (item) => {
+    if (typeof fetchItemDetails !== 'function') {
+      setViewingItem(item);
+      setShowViewModal(true);
+      return;
+    }
+
+    try {
+      setViewLoading(true);
+      const details = await fetchItemDetails(item.id);
+      const raw = details?.success ? details.data : details;
+      setViewingItem(typeof transformResponse === 'function' ? transformResponse(raw) : raw);
+      setShowViewModal(true);
+    } catch {
+      setViewingItem(item);
+      setShowViewModal(true);
+    } finally {
+      setViewLoading(false);
+    }
   };
 
   const handleCloseViewModal = () => {
@@ -165,6 +188,7 @@ const CRUDPage = ({
           onChange: handleFilterChange
         }}
         emailFilter={emailFilter}
+        extraFilters={extraFilters}
         addButton={pageConfig.hideAddButton ? null : {
           label: pageConfig.addButtonLabel || 'Add Item',
           icon: FiPlus,
@@ -198,14 +222,18 @@ const CRUDPage = ({
           onItemsPerPageChange: handleItemsPerPageChange
         }}
         actions={[
-          { type: 'view',    label: 'View',    onClick: handleView    },
-          { type: 'edit',    label: 'Edit',    onClick: handleEdit,    ...(selfId != null ? { visible: (row) => row.id !== selfId } : {}) },
+          { type: 'view', label: 'View', onClick: handleView },
+          ...(!(pageConfig.hideActions || []).includes('edit')
+            ? [{ type: 'edit', label: 'Edit', onClick: handleEdit, ...(selfId != null ? { visible: (row) => row.id !== selfId } : {}) }]
+            : []),
           ...extraActions,
-          { type: 'delete',  label: 'Delete',  onClick: handleDelete,  ...(selfId != null ? { visible: (row) => row.id !== selfId } : {}) },
-          { type: 'restore', label: 'Restore', onClick: handleRestore }
-        ].filter(a => !(pageConfig.hideActions || []).includes(a.type))}
+          ...(!(pageConfig.hideActions || []).includes('delete')
+            ? [{ type: 'delete', label: 'Delete', onClick: handleDelete, ...(selfId != null ? { visible: (row) => row.id !== selfId } : {}) }]
+            : []),
+          { type: 'restore', label: 'Restore', onClick: handleRestore },
+        ]}
         filterStatus={filterStatus}
-        actionLoading={actionLoading}
+        actionLoading={actionLoading || viewLoading}
       />
 
       {/* Create/Edit Modal */}
@@ -223,6 +251,7 @@ const CRUDPage = ({
         isEditing={isEditing}
         maxWidth={modalMaxWidth || 'max-w-4xl'}
         fieldsLayout={formFieldsLayout}
+        submitLabel={submitLabel}
       />
 
       {/* View Modal */}

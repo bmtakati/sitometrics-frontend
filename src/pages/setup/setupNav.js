@@ -8,7 +8,6 @@ import {
   FiLayers,
   FiSliders,
   FiArchive,
-  FiDroplet,
   FiBox,
   FiPackage,
   FiDollarSign,
@@ -19,6 +18,7 @@ import {
   FiCreditCard,
   FiClipboard,
 } from 'react-icons/fi';
+import { crudPermissions } from '../../utils/permissions';
 
 export const setupMenuChildren = [
   {
@@ -27,10 +27,10 @@ export const setupMenuChildren = [
     icon: FiCpu,
     color: 'text-blue-600',
     children: [
-      { id: 'modules', label: 'Modules', path: '/setup/modules', icon: FiGrid, color: 'text-blue-600' },
-      { id: 'statuses', label: 'Statuses', path: '/setup/statuses', icon: FiTag, color: 'text-rose-600' },
-      { id: 'status-groups', label: 'Status Categories', path: '/setup/status-groups', icon: FiLayers, color: 'text-violet-600' },
-      { id: 'status-mapping', label: 'Status Mapping', path: '/setup/status-mapping', icon: FiSliders, color: 'text-cyan-600' },
+      { id: 'modules', label: 'Modules', path: '/setup/modules', icon: FiGrid, color: 'text-blue-600', permission: crudPermissions('modules') },
+      { id: 'statuses', label: 'Statuses', path: '/setup/statuses', icon: FiTag, color: 'text-rose-600', permission: crudPermissions('settings') },
+      { id: 'status-groups', label: 'Status Categories', path: '/setup/status-groups', icon: FiLayers, color: 'text-violet-600', permission: crudPermissions('settings') },
+      { id: 'status-mapping', label: 'Status Mapping', path: '/setup/status-mapping', icon: FiSliders, color: 'text-cyan-600', permission: crudPermissions('settings') },
     ],
   },
   {
@@ -39,22 +39,9 @@ export const setupMenuChildren = [
     icon: FiMapPin,
     color: 'text-emerald-600',
     children: [
-      { id: 'hotels', label: 'Hotels', path: '/setup/hotels', icon: FiHome, color: 'text-emerald-600' },
-      { id: 'outlets', label: 'Outlets', path: '/setup/outlets', icon: FiCoffee, color: 'text-orange-600' },
-      { id: 'order-types', label: 'Order Types', path: '/setup/order-types', icon: FiClipboard, color: 'text-sky-600' },
-    ],
-  },
-  {
-    id: 'setup-catalog',
-    label: 'Catalog',
-    icon: FiArchive,
-    color: 'text-amber-600',
-    children: [
-      { id: 'item-category', label: 'Item Categories', path: '/setup/item-category', icon: FiArchive, color: 'text-emerald-600' },
-      { id: 'food-categories', label: 'Food Categories', path: '/setup/food-categories', icon: FiCoffee, color: 'text-orange-600' },
-      { id: 'beverage-categories', label: 'Beverage Categories', path: '/setup/beverage-categories', icon: FiDroplet, color: 'text-sky-600' },
-      { id: 'item', label: 'Items', path: '/setup/item', icon: FiBox, color: 'text-amber-600' },
-      { id: 'unit', label: 'Units', path: '/setup/unit', icon: FiPackage, color: 'text-cyan-600' },
+      { id: 'hotels', label: 'Hotels', path: '/setup/hotels', icon: FiHome, color: 'text-emerald-600', permission: crudPermissions('hotels') },
+      { id: 'outlets', label: 'Outlets', path: '/setup/outlets', icon: FiCoffee, color: 'text-orange-600', permission: crudPermissions('outlets') },
+      { id: 'order-types', label: 'Order Types', path: '/setup/order-types', icon: FiClipboard, color: 'text-sky-600', permission: crudPermissions('order-types') },
     ],
   },
   {
@@ -63,10 +50,10 @@ export const setupMenuChildren = [
     icon: FiDollarSign,
     color: 'text-green-600',
     children: [
-      { id: 'currencies', label: 'Currency', path: '/setup/currencies', icon: FiDollarSign, color: 'text-green-600' },
-      { id: 'payment-methods', label: 'Payment Methods', path: '/setup/payment-methods', icon: FiCreditCard, color: 'text-emerald-600' },
-      { id: 'exchange-rates', label: 'Exchange Rates', path: '/setup/exchange-rates', icon: FiRefreshCw, color: 'text-teal-600' },
-      { id: 'locales', label: 'Locales', path: '/setup/locales', icon: FiGlobe, color: 'text-indigo-600' },
+      { id: 'currencies', label: 'Currency', path: '/setup/currencies', icon: FiDollarSign, color: 'text-green-600', permission: crudPermissions('currencies') },
+      { id: 'payment-methods', label: 'Payment Methods', path: '/setup/payment-methods', icon: FiCreditCard, color: 'text-emerald-600', permission: crudPermissions('payment-methods') },
+      { id: 'exchange-rates', label: 'Exchange Rates', path: '/setup/exchange-rates', icon: FiRefreshCw, color: 'text-teal-600', permission: crudPermissions('exchange-rates') },
+      { id: 'locales', label: 'Locales', path: '/setup/locales', icon: FiGlobe, color: 'text-indigo-600', permission: crudPermissions('settings') },
     ],
   },
   {
@@ -75,8 +62,11 @@ export const setupMenuChildren = [
     icon: FiDatabase,
     color: 'text-violet-600',
     children: [
-      { id: 'store', label: 'Stores', path: '/setup/store', icon: FiHome, color: 'text-violet-600' },
-      { id: 'slideshow-slides', label: 'Slideshow', path: '/setup/slideshow-slides', icon: FiImage, color: 'text-pink-600' },
+      { id: 'item-category', label: 'Item Categories', path: '/setup/item-category', icon: FiArchive, color: 'text-emerald-600', permission: crudPermissions('item-categories') },
+      { id: 'item', label: 'Store Items', path: '/setup/item', icon: FiBox, color: 'text-amber-600', permission: crudPermissions('items') },
+      { id: 'unit', label: 'Units', path: '/setup/unit', icon: FiPackage, color: 'text-cyan-600', permission: crudPermissions('units') },
+      { id: 'store', label: 'Stores', path: '/setup/store', icon: FiHome, color: 'text-violet-600', permission: crudPermissions('stores') },
+      { id: 'slideshow-slides', label: 'Slideshow', path: '/setup/slideshow-slides', icon: FiImage, color: 'text-pink-600', permission: crudPermissions('slideshow-slides') },
     ],
   },
 ];
@@ -90,8 +80,9 @@ export const setupRoutes = [
   { path: 'setup/status-groups', component: 'StatusGroups' },
   { path: 'setup/status-mapping', component: 'StatusMapping' },
   { path: 'setup/item-category', component: 'ItemCategory' },
-  { path: 'setup/food-categories', component: 'FoodCategory' },
-  { path: 'setup/beverage-categories', component: 'BeverageCategory' },
+  { path: 'setup/menu-items', component: 'MenuItem' },
+  { path: 'setup/menu-categories', component: 'MenuCategories' },
+  { path: 'setup/menu-subcategories', component: 'MenuSubcategories' },
   { path: 'setup/item', component: 'Item' },
   { path: 'setup/unit', component: 'Unit' },
   { path: 'setup/currencies', component: 'Currency' },

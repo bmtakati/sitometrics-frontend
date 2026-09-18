@@ -104,7 +104,7 @@ const ActionMenu = ({ actions = [], item, disabled = false }) => {
         <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center">
           <Icon className={`w-3.5 h-3.5 ${style.iconColor}`} />
         </span>
-        <span>{action.label}</span>
+        <span>{typeof action.label === 'function' ? action.label(item) : action.label}</span>
       </button>
     );
   };

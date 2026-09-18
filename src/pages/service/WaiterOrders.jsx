@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { FiBell, FiCheck, FiCoffee, FiFileText, FiLock, FiMaximize, FiRefreshCw, FiTrash2, FiX } from 'react-icons/fi';
 import {
   showQuickError,
@@ -13,10 +13,12 @@ import ActiveOrdersList from '../../components/service/ActiveOrdersList';
 import NewOrderForm from '../../components/service/NewOrderForm';
 import WaiterOrdersSidebar from '../../components/service/WaiterOrdersSidebar';
 import WaiterPosShell from '../../components/service/WaiterPosShell';
+import QuantityField from '../../components/service/QuantityField';
 import { canCancelOpenOrder, canCloseOrder } from '../../components/service/orderStatusStyles';
 import useOrderNotifications from '../../hooks/useOrderNotifications';
 import { useAuth } from '../../context/AuthContext';
 import { usePosMode } from '../../context/PosModeContext';
+import { userRequiresPosMode } from '../../utils/posMode';
 import { formatMoney } from '../../utils/formatMoney';
 import { hasPermission } from '../../utils/permissions';
 import { API_BASE_URL } from '../../context/AuthContext';
@@ -39,6 +41,12 @@ import {
   updateOrderDetails,
 } from '../../utils/waiterOrderApi';
 import { thermalPrintOrder } from '../../utils/thermalPrintApi';
+
+const formatQty = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return value ?? '—';
+  return String(parsed);
+};
 
 const parseSeatList = (value) =>
   String(value || '')
@@ -78,6 +86,7 @@ const WaiterOrders = () => {
   /** null = auto from outlet/device; true/false = user override */
   const [posOverride, setPosOverride] = useState(null);
   const [deviceSuggestsPos, setDeviceSuggestsPos] = useState(false);
+  const [draftTab, setDraftTab] = useState('details');
 
   const { notifications, markRead, unreadCount, refresh: refreshNotifications } = useOrderNotifications('WAITER');
 
@@ -97,15 +106,17 @@ const WaiterOrders = () => {
     [outlets, outletId]
   );
 
-  const autoPos = Boolean(selectedOutlet?.uses_pos) || deviceSuggestsPos;
-  const wantPos = posOverride !== null ? posOverride : autoPos;
+  const rolePos = userRequiresPosMode(user);
+  const autoPos = Boolean(selectedOutlet?.uses_pos) || deviceSuggestsPos || rolePos;
+  const wantPos = rolePos || (posOverride !== null ? posOverride : autoPos);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setPosMode(wantPos);
-    return () => setPosMode(false);
   }, [wantPos, setPosMode]);
 
   useEffect(() => {
+    // Changing outlet should not kick the user out of an explicit POS session.
+    if (posOverride === true) return;
     setPosOverride(null);
   }, [outletId]);
 
@@ -246,6 +257,8 @@ const WaiterOrders = () => {
     setSelectedOrder(order);
     setExpandedPanel('active');
     setPosTab('detail');
+    const itemCount = order.items_count ?? order.items?.length ?? 0;
+    setDraftTab(order.workflow_status === 'DRAFT' && itemCount === 0 ? 'details' : 'items');
   };
 
   const toggleSeat = (seatNumber) => {
@@ -278,6 +291,7 @@ const WaiterOrders = () => {
       });
       setSelectedOrder(order);
       setOrderRemarks(order.remarks || '');
+      setDraftTab('items');
       setNewOrderRemarks('');
       setIsComplementary(false);
       setRoomNumber('');
@@ -308,6 +322,7 @@ const WaiterOrders = () => {
       setSelectedOrder(updated);
       await reloadOrders();
       await reloadPendingComplementary();
+      setDraftTab('items');
     } catch (error) {
       showQuickError('Could not save order details', error.message);
     } finally {
@@ -317,11 +332,16 @@ const WaiterOrders = () => {
 
   const handleAddItem = async () => {
     if (!selectedOrder || !catalogId) return;
+    const parsedQuantity = Number.parseFloat(String(quantity).replace(',', '.'));
+    if (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0) {
+      await showWarningDialog('Enter a quantity greater than 0');
+      return;
+    }
     setLoading(true);
     try {
       const payload = {
         line_type: lineType,
-        quantity: Math.max(1, parseInt(String(quantity), 10) || 1),
+        quantity: Math.round(parsedQuantity * 10000) / 10000,
         remarks: itemRemarks.trim() || null,
         seat_numbers: seatNumbers.trim() || null,
       };
@@ -543,33 +563,6 @@ const WaiterOrders = () => {
               <FiFileText className="inline" /> Print order
             </button>
           ) : null}
-          {selectedOrder.workflow_status === 'DRAFT' ? (
-            <>
-              {orderHasItems ? (
-                <button
-                  type="button"
-                  disabled={loading || (selectedOrder.is_complementary && selectedOrder.complementary_status !== 'APPROVED')}
-                  title={
-                    selectedOrder.is_complementary && selectedOrder.complementary_status !== 'APPROVED'
-                      ? 'Complementary orders need hotel manager approval before submitting'
-                      : 'Submit to kitchen/bar'
-                  }
-                  onClick={() => runAction('Order submitted', () => submitOrder(selectedOrder.id))}
-                  className={`flex-1 bg-blue-600 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none ${btnBase}`}
-                >
-                  Submit to kitchen/bar
-                </button>
-              ) : null}
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => runAction('Order cancelled', () => cancelOrder(selectedOrder.id))}
-                className={`flex-1 border border-red-300 text-red-600 sm:flex-none ${btnBase}`}
-              >
-                Cancel
-              </button>
-            </>
-          ) : null}
           {selectedOrder.workflow_status === 'OPEN' ? (
             <>
               <button
@@ -602,93 +595,173 @@ const WaiterOrders = () => {
       </div>
 
       {selectedOrder.workflow_status === 'DRAFT' ? (
-        <div className="space-y-3 rounded-xl border border-stone-200 p-3 dark:border-stone-700">
-          <p className="text-sm font-medium">Order details</p>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Order type</label>
-            <SearchableSelect options={orderTypeOptions} value={orderTypeId} onChange={setOrderTypeId} placeholder="Select order type…" />
-          </div>
-          <label className="flex min-h-11 items-center gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={isComplementary}
-              onChange={(e) => setIsComplementary(e.target.checked)}
-              className="h-5 w-5"
-            />
-            Complementary order
-          </label>
-          {editingOrderType?.requires_room_number ? (
-            <div>
-              <label className="mb-1 block text-sm font-medium">Room number</label>
-              <input
-                type="text"
-                value={roomNumber}
-                onChange={(e) => setRoomNumber(e.target.value)}
-                className={fieldClass}
-              />
-            </div>
-          ) : null}
-          {editingOrderType?.requires_guest_signature ? (
-            <div>
-              <label className="mb-1 block text-sm font-medium">Guest signature</label>
-              <SignaturePad value={guestSignature} onChange={setGuestSignature} />
-            </div>
-          ) : null}
-          <button type="button" onClick={handleSaveDetails} className={`border ${btnBase}`}>
-            Save order details
-          </button>
+        <div
+          role="tablist"
+          className={
+            touch
+              ? 'sticky top-0 z-10 grid grid-cols-2 gap-3 bg-white/95 py-1 dark:bg-stone-900/95'
+              : 'sticky top-0 z-10 flex border-b border-stone-200 bg-white/95 dark:border-stone-700 dark:bg-stone-900/95'
+          }
+        >
+          {[
+            { id: 'details', label: 'Order details' },
+            {
+              id: 'items',
+              label: `Order items${orderHasItems ? ` (${selectedOrder.items?.length || selectedOrder.items_count})` : ''}`,
+            },
+          ].map((tab) => {
+            const active = draftTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setDraftTab(tab.id)}
+                className={
+                  touch
+                    ? `min-h-16 rounded-2xl px-4 text-lg font-semibold ${
+                        active
+                          ? 'bg-amber-500 text-stone-950'
+                          : 'border border-stone-300 bg-white text-stone-800 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-100'
+                      }`
+                    : `-mb-px border-b-2 px-4 font-medium min-h-11 text-sm ${
+                        active
+                          ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
+                          : 'border-transparent text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200'
+                      }`
+                }
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       ) : null}
 
-      <div className="rounded-xl border border-stone-200 p-3 dark:border-stone-700">
-        <label className="mb-1 block text-sm font-medium">Order note</label>
-        <textarea
-          value={orderRemarks}
-          onChange={(e) => setOrderRemarks(e.target.value)}
-          onBlur={handleSaveRemarks}
-          rows={touch ? 3 : 2}
-          disabled={!['DRAFT', 'OPEN'].includes(selectedOrder.workflow_status)}
-          placeholder="General comments for this order…"
-          className={fieldClass}
-        />
-      </div>
+      {selectedOrder.workflow_status !== 'DRAFT' || draftTab === 'details' ? (
+        <>
+          {selectedOrder.workflow_status === 'DRAFT' ? (
+            <div className="space-y-3 rounded-xl border border-stone-200 p-3 dark:border-stone-700">
+              <div>
+                <label className="mb-1 block text-sm font-medium">Order type</label>
+                <SearchableSelect options={orderTypeOptions} value={orderTypeId} onChange={setOrderTypeId} placeholder="Select order type…" />
+              </div>
+              <label className="flex min-h-11 items-center gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={isComplementary}
+                  onChange={(e) => setIsComplementary(e.target.checked)}
+                  className="h-5 w-5"
+                />
+                Complementary order
+              </label>
+              {editingOrderType?.requires_room_number ? (
+                <div>
+                  <label className="mb-1 block text-sm font-medium">Room number</label>
+                  <input
+                    type="text"
+                    value={roomNumber}
+                    onChange={(e) => setRoomNumber(e.target.value)}
+                    className={fieldClass}
+                  />
+                </div>
+              ) : null}
+              {editingOrderType?.requires_guest_signature ? (
+                <div>
+                  <label className="mb-1 block text-sm font-medium">Guest signature</label>
+                  <SignaturePad value={guestSignature} onChange={setGuestSignature} />
+                </div>
+              ) : null}
+              <div>
+                <label className="mb-1 block text-sm font-medium">Order note</label>
+                <textarea
+                  value={orderRemarks}
+                  onChange={(e) => setOrderRemarks(e.target.value)}
+                  rows={touch ? 3 : 2}
+                  placeholder="General comments for this order…"
+                  className={fieldClass}
+                />
+              </div>
+              <button type="button" onClick={handleSaveDetails} className={`border ${btnBase}`}>
+                Save order details
+              </button>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-stone-200 p-3 dark:border-stone-700">
+              <label className="mb-1 block text-sm font-medium">Order note</label>
+              <textarea
+                value={orderRemarks}
+                onChange={(e) => setOrderRemarks(e.target.value)}
+                onBlur={handleSaveRemarks}
+                rows={touch ? 3 : 2}
+                disabled={!['DRAFT', 'OPEN'].includes(selectedOrder.workflow_status)}
+                placeholder="General comments for this order…"
+                className={fieldClass}
+              />
+            </div>
+          )}
+        </>
+      ) : null}
 
-      {canModifyItems ? (
+      {selectedOrder.workflow_status !== 'DRAFT' || draftTab === 'items' ? (
+        <>
+          {canModifyItems ? (
         <div className="space-y-3 rounded-xl border border-stone-200 p-3 dark:border-stone-700">
           <p className="text-sm font-medium">
             {selectedOrder.workflow_status === 'OPEN' ? 'Add more items (sent immediately)' : 'Add items'}
           </p>
-          <div className={`grid gap-3 ${touch ? 'grid-cols-1' : 'md:grid-cols-[140px_1fr_90px_auto]'}`}>
-            <select
-              value={lineType}
-              onChange={(e) => {
-                setLineType(e.target.value);
-                setCatalogId('');
-              }}
-              className={fieldClass}
-            >
-              <option value="MENU">Menu</option>
-              <option value="FOOD">Food item</option>
-              <option value="BEVERAGE">Beverage</option>
-            </select>
-            <SearchableSelect options={catalogOptions} value={catalogId} onChange={setCatalogId} placeholder="Select item…" />
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className={fieldClass}
-            />
-            <button
-              type="button"
-              disabled={loading}
-              onClick={handleAddItem}
-              className={`bg-emerald-600 font-medium text-white ${btnBase}`}
-            >
-              Add
-            </button>
+          <div className={touch ? 'space-y-3' : 'grid gap-3 md:grid-cols-[140px_1fr_120px]'}>
+            {touch ? (
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: 'MENU', label: 'Menu' },
+                  { value: 'FOOD', label: 'Food item' },
+                  { value: 'BEVERAGE', label: 'Beverage' },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setLineType(option.value);
+                      setCatalogId('');
+                    }}
+                    className={`min-h-16 rounded-2xl px-3 py-4 text-base font-semibold ${
+                      lineType === option.value
+                        ? 'bg-emerald-600 text-white'
+                        : 'border border-stone-300 bg-white text-stone-800 dark:border-stone-600 dark:bg-stone-800'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <select
+                value={lineType}
+                onChange={(e) => {
+                  setLineType(e.target.value);
+                  setCatalogId('');
+                }}
+                className={fieldClass}
+              >
+                <option value="MENU">Menu</option>
+                <option value="FOOD">Food item</option>
+                <option value="BEVERAGE">Beverage</option>
+              </select>
+            )}
+            <div className={touch ? 'grid grid-cols-[minmax(0,1fr)_7.5rem] items-stretch gap-3' : 'contents'}>
+              <SearchableSelect options={catalogOptions} value={catalogId} onChange={setCatalogId} placeholder="Select item…" />
+              <QuantityField
+                value={quantity}
+                onChange={setQuantity}
+                touch={touch}
+                className={`${fieldClass} ${touch ? 'min-h-[4.5rem] text-center text-xl font-semibold' : ''}`}
+              />
+            </div>
           </div>
+          {catalogId && String(quantity).trim() !== '' ? (
+            <>
           {activeTableSeats.length ? (
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">Seat numbers</p>
@@ -716,24 +789,44 @@ const WaiterOrders = () => {
               </div>
             </div>
           ) : null}
-          <input
-            type="text"
-            value={seatNumbers}
-            onChange={(e) => setSeatNumbers(e.target.value)}
-            placeholder="Seat numbers (comma-separated)"
-            className={fieldClass}
-          />
-          <input
-            type="text"
-            value={itemRemarks}
-            onChange={(e) => setItemRemarks(e.target.value)}
-            placeholder="Item comment (e.g. no ice, well done)"
-            className={fieldClass}
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="text"
+              value={seatNumbers}
+              onChange={(e) => setSeatNumbers(e.target.value)}
+              placeholder="Seat numbers"
+              aria-label="Seat numbers"
+              className={fieldClass}
+            />
+            <input
+              type="text"
+              value={itemRemarks}
+              onChange={(e) => setItemRemarks(e.target.value)}
+              placeholder="Item comment"
+              aria-label="Item comment"
+              className={fieldClass}
+            />
+          </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleAddItem}
+                className={`bg-emerald-600 font-medium text-white ${btnBase} ${touch ? 'w-1/2' : ''}`}
+              >
+                Add Item
+              </button>
+            </div>
+            </>
+          ) : null}
         </div>
       ) : null}
 
-      {touch ? (
+      {(selectedOrder.items || []).length === 0 ? (
+        <p className="rounded-xl border border-dashed border-stone-300 px-4 py-8 text-center text-sm text-stone-500 dark:border-stone-600">
+          {canModifyItems ? 'No items yet. Add a menu, food, or beverage above.' : 'No items on this order.'}
+        </p>
+      ) : touch ? (
         <div className="space-y-3">
           {(selectedOrder.items || []).map((item) => (
             <div
@@ -747,8 +840,8 @@ const WaiterOrders = () => {
                   <p className="mt-1 text-sm text-stone-500">
                     Qty{' '}
                     {item.fulfilled_quantity != null && Number(item.fulfilled_quantity) !== Number(item.quantity)
-                      ? `${item.fulfilled_quantity}/${item.quantity}`
-                      : item.quantity}{' '}
+                      ? `${formatQty(item.fulfilled_quantity)}/${formatQty(item.quantity)}`
+                      : formatQty(item.quantity)}{' '}
                     · {item.destination} · Seats {item.seat_numbers || '—'}
                   </p>
                   <p className="mt-1 font-medium">{formatMoney(item.line_total)}</p>
@@ -817,8 +910,8 @@ const WaiterOrders = () => {
                     <td className="px-3 py-2">{item.destination}</td>
                     <td className="px-3 py-2">
                       {item.fulfilled_quantity != null && Number(item.fulfilled_quantity) !== Number(item.quantity)
-                        ? `${item.fulfilled_quantity}/${item.quantity}`
-                        : item.quantity}
+                        ? `${formatQty(item.fulfilled_quantity)}/${formatQty(item.quantity)}`
+                        : formatQty(item.quantity)}
                     </td>
                     <td className="px-3 py-2">{formatMoney(item.line_total)}</td>
                     <td className="px-3 py-2">
@@ -864,21 +957,56 @@ const WaiterOrders = () => {
           <div className="flex justify-end text-lg font-bold">Total: {formatMoney(selectedOrder.total || 0)}</div>
         </>
       )}
+          {selectedOrder.workflow_status === 'DRAFT' ? (
+            <div className={touch ? 'grid grid-cols-1 gap-2' : 'flex justify-end gap-2'}>
+              {orderHasItems ? (
+                <button
+                  type="button"
+                  disabled={loading || (selectedOrder.is_complementary && selectedOrder.complementary_status !== 'APPROVED')}
+                  title={
+                    selectedOrder.is_complementary && selectedOrder.complementary_status !== 'APPROVED'
+                      ? 'Complementary orders need hotel manager approval before submitting'
+                      : 'Submit Order'
+                  }
+                  onClick={() => runAction('Order submitted', () => submitOrder(selectedOrder.id))}
+                  className={`bg-blue-600 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${btnBase} ${touch ? 'w-full' : ''}`}
+                >
+                  Submit Order
+                </button>
+              ) : null}
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => runAction('Order cancelled', () => cancelOrder(selectedOrder.id))}
+                className={`border border-red-300 text-red-600 ${btnBase} ${touch ? 'w-full' : ''}`}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : null}
+        </>
+      ) : null}
     </div>
   );
 
   const enterPosMode = async () => {
     setPosOverride(true);
+    setPosMode(true);
     await enterFullscreen();
   };
 
-  if (posMode) {
+  const exitPosMode = () => {
+    setPosOverride(false);
+    setPosMode(false);
+  };
+
+  if (posMode || posOverride) {
     return (
       <WaiterPosShell
         tab={posTab}
         onTabChange={setPosTab}
         selectedOrderLabel={selectedOrder?.order_no || selectedOrder?.code}
-        onExitPos={() => setPosOverride(false)}
+        onExitPos={rolePos ? undefined : exitPosMode}
         outletSelect={
           <SearchableSelect
             options={outletOptions}

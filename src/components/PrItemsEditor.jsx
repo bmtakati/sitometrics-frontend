@@ -1,8 +1,102 @@
 import React, { useMemo, useState } from 'react';
-import { FiPlus, FiTrash2 } from 'react-icons/fi';
+import { createPortal } from 'react-dom';
+import { FiHelpCircle, FiPlus, FiTrash2 } from 'react-icons/fi';
 import SearchableSelect from './SearchableSelect';
 
-export const emptyPrLine = () => ({ item_id: '', quantity: '', remarks: '' });
+export const emptyPrLine = () => ({ item_id: '', quantity: '', item_unit_id: '', remarks: '' });
+
+const itemUnitRows = (item) => item?.item_units || item?.itemUnits || [];
+
+const purchaseUnitRows = (item) => {
+  const rows = itemUnitRows(item).filter((row) => row.is_active !== false && row.is_purchase_unit);
+  return rows.length ? rows : itemUnitRows(item);
+};
+
+const defaultPurchaseUnitId = (item) => {
+  const rows = purchaseUnitRows(item);
+  const selected = rows.find((row) => row.is_default_purchase) || rows[0];
+  return selected?.id != null ? String(selected.id) : '';
+};
+
+const unitOptionLabel = (row) => {
+  const unit = row?.unit;
+  if (!unit) return '';
+  if (unit.name && unit.symbol && unit.name !== unit.symbol) {
+    return `${unit.name} (${unit.symbol})`;
+  }
+  return unit.symbol || unit.name || '';
+};
+
+const purchaseUnitLabel = (item, itemUnitId) => {
+  const rows = purchaseUnitRows(item);
+  const selected = itemUnitId
+    ? rows.find((row) => String(row.id) === String(itemUnitId))
+    : rows.find((row) => row.is_default_purchase) || rows[0];
+  return unitOptionLabel(selected);
+};
+
+const itemDetailRows = (item, categoryName, itemUnitId) => [
+  ['Name', item?.name],
+  ['Code', item?.code],
+  ['Subcategory', categoryName],
+  ['Purchasing unit', purchaseUnitLabel(item, itemUnitId)],
+  ['Description', item?.description],
+  ['Min / Reorder', `${item?.minimum_level ?? '—'} / ${item?.reorder_level ?? '—'}`],
+];
+
+const ItemDetailsHelp = ({ item, categoryName, itemUnitId, darkMode }) => {
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState(null);
+
+  const show = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const width = 288;
+    const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
+    setPosition({ top: rect.bottom + 6, left });
+    setOpen(true);
+  };
+
+  return (
+    <span className="relative inline-flex shrink-0">
+      <button
+        type="button"
+        className="inline-flex h-4 w-4 items-center justify-center text-stone-400 hover:text-emerald-600"
+        aria-label="Item details"
+        onMouseEnter={show}
+        onMouseLeave={() => setOpen(false)}
+        onFocus={show}
+        onBlur={() => setOpen(false)}
+      >
+        <FiHelpCircle className="h-4 w-4" />
+      </button>
+      {open && position
+        ? createPortal(
+            <span
+              role="tooltip"
+              style={{ top: position.top, left: position.left, width: 288 }}
+              className={`pointer-events-none fixed z-[2147483600] rounded-lg px-3 py-2 text-left text-xs font-normal normal-case tracking-normal shadow-lg ${
+                darkMode ? 'bg-gray-800 text-gray-100' : 'bg-stone-900 text-white'
+              }`}
+            >
+              <span className="grid gap-1.5">
+                {itemDetailRows(item, categoryName, itemUnitId).map(([label, value]) => (
+                  <span key={label} className="block">
+                    <span className="font-semibold">{label}:</span> {value || '—'}
+                  </span>
+                ))}
+              </span>
+            </span>,
+            document.body
+          )
+        : null}
+    </span>
+  );
+};
+
+const selectedUnitLabel = (line, item) => {
+  const match = purchaseUnitRows(item).find((row) => String(row.id) === String(line.item_unit_id));
+  return unitOptionLabel(match) || unitOptionLabel(line.item_unit || line.itemUnit);
+};
 
 const getCategoryId = (item) => item?.category?.id ?? item?.item_category_id ?? null;
 
@@ -21,6 +115,7 @@ const PrItemsEditor = ({
   const [draftCategoryId, setDraftCategoryId] = useState('');
   const [draftItemId, setDraftItemId] = useState('');
   const [draftQuantity, setDraftQuantity] = useState('');
+  const [draftUnitId, setDraftUnitId] = useState('');
   const [draftRemarks, setDraftRemarks] = useState('');
   const [draftError, setDraftError] = useState('');
 
@@ -44,11 +139,6 @@ const PrItemsEditor = ({
     }
     return [...map.values()].sort((a, b) => String(a.name).localeCompare(String(b.name)));
   }, [categories, items]);
-
-  const categoryById = useMemo(
-    () => new Map(effectiveCategories.map((category) => [String(category.id), category])),
-    [effectiveCategories]
-  );
 
   const categoryOptions = useMemo(
     () =>
@@ -115,9 +205,16 @@ const PrItemsEditor = ({
   const resetDraftItemFields = () => {
     setDraftItemId('');
     setDraftQuantity('');
+    setDraftUnitId('');
     setDraftRemarks('');
     setDraftError('');
   };
+
+  const draftPurchaseUnits = purchaseUnitRows(draftItem);
+  const unitOptions = purchaseUnitRows(draftItem).map((row) => ({
+    value: String(row.id),
+    label: unitOptionLabel(row),
+  }));
 
   const handleCategoryChange = (categoryId) => {
     setDraftCategoryId(categoryId || '');
@@ -125,8 +222,10 @@ const PrItemsEditor = ({
   };
 
   const handleItemChange = (itemId) => {
+    const item = itemId ? itemById.get(String(itemId)) : null;
     setDraftItemId(itemId || '');
     setDraftQuantity('');
+    setDraftUnitId(item ? defaultPurchaseUnitId(item) : '');
     setDraftRemarks('');
     setDraftError('');
   };
@@ -144,6 +243,10 @@ const PrItemsEditor = ({
       setDraftError('Enter a quantity greater than zero.');
       return;
     }
+    if (draftPurchaseUnits.length && !draftUnitId) {
+      setDraftError('Select a unit.');
+      return;
+    }
     if (selectedItemIds.has(String(draftItemId))) {
       setDraftError('This item is already in the list.');
       return;
@@ -154,6 +257,7 @@ const PrItemsEditor = ({
       {
         item_id: String(draftItemId),
         quantity: draftQuantity,
+        item_unit_id: draftUnitId,
         remarks: draftRemarks.trim(),
       },
     ]);
@@ -168,22 +272,23 @@ const PrItemsEditor = ({
   const mutedClass = darkMode ? 'text-gray-500' : 'text-gray-500';
   const borderClass = darkMode ? 'border-gray-600' : 'border-gray-200';
   const panelClass = `rounded-xl border ${borderClass} ${darkMode ? 'bg-gray-900/40' : 'bg-white'}`;
-  const inputClass = `h-10 w-full rounded-lg border px-3 text-sm ${
+  const inputClass = `h-12 min-h-[48px] w-full rounded-lg border px-3 text-sm ${
     darkMode ? 'border-gray-600 bg-gray-800 text-gray-200' : 'border-gray-300 bg-white text-gray-900'
   }`;
   const fieldLabelClass = `mb-1 block text-xs font-medium ${mutedClass}`;
 
-  const renderDetail = (label, value) => (
-    <div>
-      <p className={`text-[11px] font-semibold uppercase tracking-wide ${mutedClass}`}>{label}</p>
-      <p className={`text-sm ${labelClass}`}>{value || '—'}</p>
-    </div>
-  );
-
-  if (!items.length && !effectiveCategories.length) {
+    if (!items.length && !effectiveCategories.length) {
     return (
       <div className={`rounded-xl border border-dashed px-4 py-8 text-center text-sm ${borderClass} ${mutedClass}`}>
-        No active inventory items are available. Add items under Setup before creating a requisition.
+        No procurable items are available. Add agreed item prices on a supplier before creating a requisition.
+      </div>
+    );
+  }
+
+  if (!items.length) {
+    return (
+      <div className={`rounded-xl border border-dashed px-4 py-8 text-center text-sm ${borderClass} ${mutedClass}`}>
+        No items with supplier agreed prices were found. Update supplier catalogs under Procurement before requisitioning.
       </div>
     );
   }
@@ -193,7 +298,7 @@ const PrItemsEditor = ({
       <div>
         <p className={`text-sm font-medium ${labelClass}`}>Required items</p>
         <p className={`text-xs ${mutedClass}`}>
-          Search subcategory and item on the left, enter quantity and remarks, then add to the selection.
+          Only items with at least one supplier agreed price can be requisitioned. Search subcategory and item, enter quantity, then choose the purchase unit.
         </p>
       </div>
 
@@ -219,7 +324,17 @@ const PrItemsEditor = ({
             </div>
 
             <div>
-              <label className={fieldLabelClass}>Item *</label>
+              <div className="mb-1 flex items-center gap-1.5">
+                <label className={`text-xs font-medium ${mutedClass}`}>Item *</label>
+                {draftItem ? (
+                  <ItemDetailsHelp
+                    item={draftItem}
+                    categoryName={effectiveCategories.find((category) => String(category.id) === String(getCategoryId(draftItem)))?.name || getCategoryLabel(draftItem)}
+                    itemUnitId={draftUnitId}
+                    darkMode={darkMode}
+                  />
+                ) : null}
+              </div>
               <SearchableSelect
                 options={itemOptions}
                 value={draftItemId}
@@ -235,29 +350,6 @@ const PrItemsEditor = ({
                 disabled={!draftCategoryId || !itemOptions.length}
               />
             </div>
-
-            {draftItem ? (
-              <div
-                className={`grid grid-cols-2 gap-3 rounded-lg border px-3 py-3 ${
-                  darkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-100 bg-gray-50'
-                }`}
-              >
-                {renderDetail('Name', draftItem.name)}
-                {renderDetail('Code', draftItem.code)}
-                {renderDetail(
-                  'Subcategory',
-                  categoryById.get(String(getCategoryId(draftItem)))?.name || getCategoryLabel(draftItem)
-                )}
-                {renderDetail(
-                  'Unit',
-                  draftItem.unit?.symbol
-                    ? `${draftItem.unit.name} (${draftItem.unit.symbol})`
-                    : draftItem.unit?.name
-                )}
-                {renderDetail('Description', draftItem.description)}
-                {renderDetail('Min / Reorder', `${draftItem.minimum_level ?? '—'} / ${draftItem.reorder_level ?? '—'}`)}
-              </div>
-            ) : null}
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
@@ -277,16 +369,30 @@ const PrItemsEditor = ({
                 />
               </div>
               <div>
-                <label className={fieldLabelClass}>Line remarks</label>
-                <input
-                  type="text"
-                  value={draftRemarks}
-                  onChange={(e) => setDraftRemarks(e.target.value)}
-                  placeholder="Optional note"
-                  className={inputClass}
-                  disabled={!draftItemId}
+                <label className={fieldLabelClass}>Unit *</label>
+                <SearchableSelect
+                  options={unitOptions}
+                  value={draftUnitId}
+                  onChange={(value) => {
+                    setDraftUnitId(value || '');
+                    setDraftError('');
+                  }}
+                  placeholder={draftItemId ? 'Select unit…' : 'Select an item first'}
+                  darkMode={darkMode}
+                  disabled={!draftItemId || !unitOptions.length}
                 />
               </div>
+            </div>
+            <div>
+              <label className={fieldLabelClass}>Line remarks</label>
+              <input
+                type="text"
+                value={draftRemarks}
+                onChange={(e) => setDraftRemarks(e.target.value)}
+                placeholder="Optional note"
+                className={inputClass}
+                disabled={!draftItemId}
+              />
             </div>
 
             {draftError ? <p className="text-xs text-red-500">{draftError}</p> : null}
@@ -336,25 +442,26 @@ const PrItemsEditor = ({
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
-                              <p className={`truncate text-sm font-medium ${labelClass}`}>
-                                {item?.name || `Item #${line.item_id}`}
+                              <p className={`flex items-center gap-1.5 truncate text-sm font-medium ${labelClass}`}>
+                                <span className="truncate">{item?.name || `Item #${line.item_id}`}</span>
+                                <ItemDetailsHelp
+                                  item={item}
+                                  categoryName={getCategoryLabel(item)}
+                                  itemUnitId={line.item_unit_id}
+                                  darkMode={darkMode}
+                                />
                               </p>
                               <p className={`truncate text-xs ${mutedClass}`}>
                                 {item?.code || '—'}
-                                {item?.unit?.symbol ? ` · ${item.unit.symbol}` : ''}
                               </p>
                               <div className={`mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs ${mutedClass}`}>
                                 <span>
                                   <span className="font-medium">Qty:</span> {line.quantity || '—'}
+                                  {selectedUnitLabel(line, item) ? ` ${selectedUnitLabel(line, item)}` : ''}
                                 </span>
                                 <span>
                                   <span className="font-medium">Remarks:</span> {line.remarks || '—'}
                                 </span>
-                                {item?.description ? (
-                                  <span className="col-span-2">
-                                    <span className="font-medium">Description:</span> {item.description}
-                                  </span>
-                                ) : null}
                               </div>
                             </div>
                             <button

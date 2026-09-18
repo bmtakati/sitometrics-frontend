@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../context/AuthContext';
 import apiFetch from './apiFetch';
+import { notifyWorkflowPendingCountChanged } from './workflowEvents';
 
 const postWorkflowAction = async (id, action, remarks = null) => {
   const response = await apiFetch(`${API_BASE_URL}/api/local-purchase-orders/${id}/${action}`, {
@@ -13,6 +14,8 @@ const postWorkflowAction = async (id, action, remarks = null) => {
     throw new Error(payload?.message || `Failed to ${action.replace(/-/g, ' ')} local purchase order`);
   }
 
+  notifyWorkflowPendingCountChanged();
+
   return payload?.data;
 };
 
@@ -21,6 +24,22 @@ export const verifyLocalPurchaseOrder = (id, remarks) => postWorkflowAction(id, 
 export const approveLocalPurchaseOrder = (id, remarks) => postWorkflowAction(id, 'approve', remarks);
 export const rejectLocalPurchaseOrder = (id, remarks) => postWorkflowAction(id, 'reject', remarks);
 export const sendLocalPurchaseOrder = (id, remarks) => postWorkflowAction(id, 'send', remarks);
+
+export const ensureLocalPurchaseOrderWorkflow = async (id) => {
+  const response = await apiFetch(`${API_BASE_URL}/api/local-purchase-orders/${id}/workflow`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload?.message || 'Failed to prepare local purchase order workflow');
+  }
+
+  notifyWorkflowPendingCountChanged();
+
+  return payload?.data;
+};
 
 export const PRINTABLE_LPO_STATUSES = [
   'APPROVED',

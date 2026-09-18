@@ -28,7 +28,8 @@ const useApiCrud = (endpoint, options = {}) => {
     resourceName = 'Item',
     autoLoad = true,
     deleteLabelKey = 'name',
-    enrichStats: enrichStatsOption
+    enrichStats: enrichStatsOption,
+    initialExtraListParams = {},
   } = options;
 
   // State management
@@ -46,6 +47,7 @@ const useApiCrud = (endpoint, options = {}) => {
   const [itemsPerPageState, setItemsPerPageState] = useState(itemsPerPage);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [extraListParams, setExtraListParams] = useState(initialExtraListParams);
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -106,10 +108,16 @@ const useApiCrud = (endpoint, options = {}) => {
       params.append('status', status);
     }
 
+    Object.entries(extraListParams).forEach(([key, value]) => {
+      if (value != null && value !== '' && value !== 'all') {
+        params.append(key, String(value));
+      }
+    });
+
     const response = await apiFetch(`${API_BASE_URL}/api/${endpoint}?${params}`);
     if (!response.ok) throw new Error(`Failed to fetch ${resourceName.toLowerCase()}s`);
     return await response.json();
-  }, [endpoint, itemsPerPageState, resourceName]);
+  }, [endpoint, itemsPerPageState, resourceName, extraListParams]);
 
   // Get all data (for dropdowns)
   const fetchAllData = useCallback(async () => {
@@ -303,12 +311,17 @@ const useApiCrud = (endpoint, options = {}) => {
           params.status = filterStatus;
         }
       }
+      Object.entries(extraListParams).forEach(([key, value]) => {
+        if (value != null && value !== '' && value !== 'all') {
+          params[key] = String(value);
+        }
+      });
       const statsRes = await fetchStats(params);
       if (statsRes.success && statsRes.data) {
         setStats(statsRes.data || { total: 0, active: 0, inactive: 0, trashed: 0 });
       }
     } catch (_) {}
-  }, [filterStatus, searchTerm, fetchStats]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filterStatus, searchTerm, fetchStats, extraListParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAdditionalData = useCallback(async () => {
     const [allDataResult, statsResult] = await Promise.allSettled([
@@ -337,7 +350,7 @@ const useApiCrud = (endpoint, options = {}) => {
       loadData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoLoad, currentPage, searchTerm, filterStatus, itemsPerPageState]);
+  }, [autoLoad, currentPage, searchTerm, filterStatus, itemsPerPageState, extraListParams]);
 
   useEffect(() => {
     if (autoLoad) {
@@ -586,6 +599,8 @@ const useApiCrud = (endpoint, options = {}) => {
     itemsPerPage: itemsPerPageState,
     searchTerm,
     filterStatus,
+    extraListParams,
+    setExtraListParams,
     showModal,
     isEditing,
     formData,
@@ -597,6 +612,8 @@ const useApiCrud = (endpoint, options = {}) => {
     setErrors,
     setShowModal,
     setIsEditing,
+    setEditingId,
+    setActionLoading,
 
     // Handlers
     handleSearch,
@@ -613,6 +630,8 @@ const useApiCrud = (endpoint, options = {}) => {
     reload,
 
     // Direct API functions (for custom operations)
+    transformResponse,
+    fetchItemDetails,
     api: {
       fetchData,
       fetchAllData,

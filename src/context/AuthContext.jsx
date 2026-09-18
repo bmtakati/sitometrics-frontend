@@ -166,7 +166,7 @@ export const AuthProvider = ({ children }) => {
       startActivityListeners();
       // If stored user is stale (missing scope or permissions), silently fetch
       // fresh user data from the API without forcing a re-login.
-      if (!userData.scope || !Array.isArray(userData.permissions?.flat)) {
+      if (!userData.scope || !Array.isArray(userData.permissions?.flat) || typeof userData.pos_interface !== 'boolean') {
         fetch(`${API_BASE_URL}/api/user`, {
           headers: {
             'Accept': 'application/json',
@@ -226,11 +226,12 @@ export const AuthProvider = ({ children }) => {
 
         // Merge roles into the stored user object so the Header (and any
         // component) can read them without an extra API call.
-        const enrichedUser = {
-          ...userObj,
-          role_names: Array.isArray(roles) ? roles : (userObj.role_names ?? []),
-          permissions: permissions ?? userObj.permissions ?? null,
-        };
+          const enrichedUser = {
+            ...userObj,
+            role_names: Array.isArray(roles) ? roles : (userObj.role_names ?? []),
+            permissions: permissions ?? userObj.permissions ?? null,
+            pos_interface: Boolean(userObj.pos_interface),
+          };
 
         setAuthUser(enrichedUser, token);
         return { success: true, message: 'Login successful' };

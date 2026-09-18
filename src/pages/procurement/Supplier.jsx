@@ -18,6 +18,15 @@ import { API_BASE_URL } from '../../context/AuthContext';
 import apiFetch from '../../utils/apiFetch';
 import { resolveApiAssetUrl } from '../../utils/resolveApiAssetUrl';
 
+const unitLabel = (unit) => unit?.symbol || unit?.name || '';
+
+const defaultPurchaseUnitLabel = (item) => {
+  const rows = item?.item_units || item?.itemUnits || [];
+  const purchase = rows.find((row) => row.is_default_purchase)
+    || rows.find((row) => row.is_purchase_unit);
+  return unitLabel(purchase?.unit) || unitLabel(item?.unit);
+};
+
 const Supplier = () => {
   const [itemOptions, setItemOptions] = useState([]);
   const [contractPreview, setContractPreview] = useState({ open: false, title: '', url: '' });
@@ -32,6 +41,7 @@ const Supplier = () => {
           rows.map((item) => ({
             value: String(item.id),
             label: `${item.name}${item.code ? ` (${item.code})` : ''}`,
+            unitLabel: defaultPurchaseUnitLabel(item),
           }))
         );
       } catch {
@@ -163,33 +173,8 @@ const Supplier = () => {
           );
         },
       },
-      { header: 'Code', accessor: 'code', noWrap: true },
       { header: 'Phone', accessor: 'phone', noWrap: true },
       { header: 'Email', accessor: 'email', noWrap: true },
-      {
-        header: 'Contract',
-        accessor: 'contract_url',
-        noWrap: true,
-        render: (row) =>
-          row.contract_url ? (
-            <button
-              type="button"
-              onClick={() =>
-                setContractPreview({
-                  open: true,
-                  title: row.contract_original_name || `${row.name} contract`,
-                  url: row.contract_url,
-                })
-              }
-              className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-800 dark:text-emerald-400"
-            >
-              <FiFileText className="h-4 w-4" />
-              View
-            </button>
-          ) : (
-            <span className="text-xs text-gray-400">—</span>
-          ),
-      },
       {
         header: 'Items',
         accessor: 'supplier_items_count',
@@ -328,6 +313,7 @@ const Supplier = () => {
                     <tr>
                       <th className="px-3 py-2">Item</th>
                       <th className="px-3 py-2">Code</th>
+                      <th className="px-3 py-2">Purchasing unit</th>
                       <th className="px-3 py-2">Agreed price</th>
                     </tr>
                   </thead>
@@ -336,6 +322,7 @@ const Supplier = () => {
                       <tr key={line.id || `${line.item_id}-${line.agreed_price}`} className="border-t border-gray-100 dark:border-gray-700">
                         <td className="px-3 py-2">{line.item?.name || line.item_id}</td>
                         <td className="px-3 py-2">{line.item?.code || '—'}</td>
+                        <td className="px-3 py-2">{defaultPurchaseUnitLabel(line.item) || '—'}</td>
                         <td className="px-3 py-2 font-medium">{formatMoney(line.agreed_price)}</td>
                       </tr>
                     ))}

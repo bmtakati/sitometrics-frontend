@@ -261,7 +261,7 @@ const ViewModal = ({
                   const displayValue = field.render
                     ? field.render(item)
                     : field.valueRender
-                    ? field.valueRender(item)
+                    ? field.valueRender(item, darkMode)
                     : formatValue(value, field);
                   return (
                     <div key={idx} className={`p-4 rounded-xl border ${

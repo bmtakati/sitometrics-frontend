@@ -72,6 +72,7 @@ const Roles = () => {
       status_id: '',
       geographical_level_id: '',
       scope_mode: 'AUTO',
+      display_mode: 'standard',
       permissions: [],
       assignable_role_ids: []
     },
@@ -107,6 +108,7 @@ const Roles = () => {
         status_id:             String(data.status_id ?? ''),
         geographical_level_id: String(data.geographical_level_id ?? data.geographical_level?.id ?? ''),
         scope_mode: data.scope_mode ?? 'AUTO',
+        display_mode: data.display_mode || 'standard',
         permissions: Array.isArray(perms)
           ? perms.map((p) => (typeof p === 'object' ? Number(p.id) : Number(p)))
           : [],
@@ -118,6 +120,7 @@ const Roles = () => {
       ...data,
       geographical_level_id: data.geographical_level_id ? Number(data.geographical_level_id) : null,
       scope_mode: data.scope_mode || 'AUTO',
+      display_mode: data.display_mode || 'standard',
       permissions: Array.isArray(data.permissions)
         ? data.permissions.map((p) => (typeof p === 'object' ? Number(p.id) : Number(p)))
         : [],
@@ -183,6 +186,12 @@ const Roles = () => {
           </span>
         );
       }
+    },
+    {
+      header: 'Display',
+      accessor: 'display_mode',
+      noWrap: true,
+      render: (row) => (row.display_mode === 'pos' ? 'POS' : 'Standard'),
     },
     {
       header: 'Scope',
@@ -278,6 +287,17 @@ const Roles = () => {
       ],
       placeholder: 'Select scope mode',
     },
+    {
+      name: 'display_mode',
+      label: 'Display mode',
+      type: 'searchable_select',
+      required: false,
+      options: [
+        { value: 'standard', label: 'Standard — sidebar and top bar' },
+        { value: 'pos', label: 'POS — fullscreen on login' },
+      ],
+      placeholder: 'Select display mode',
+    },
   ];
 
   // Form fields (flat — used by ViewModal)
@@ -362,6 +382,11 @@ const Roles = () => {
               </span>
             );
           },
+        },
+        {
+          label: 'Display mode',
+          accessor: 'display_mode',
+          valueRender: (item) => (item.display_mode === 'pos' ? 'POS — fullscreen on login' : 'Standard'),
         },
         {
           label: 'Scope Mode',

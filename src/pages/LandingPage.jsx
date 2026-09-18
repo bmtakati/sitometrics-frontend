@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth, API_BASE_URL } from '../context/AuthContext';
+import { posHomePath } from '../utils/posMode';
 import { 
   FiCheckCircle, 
   FiUsers, 
@@ -61,7 +62,7 @@ const BrandMark = ({ className = 'w-20 h-20', darkMode = false }) => (
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated, setAuthUser } = useAuth();
+  const { login, isAuthenticated, setAuthUser, user } = useAuth();
   
   // Use environment variable directly
   const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
@@ -90,9 +91,6 @@ const LandingPage = () => {
   const [landingFaqs, setLandingFaqs] = useState([]);
   const [landingFaqLoading, setLandingFaqLoading] = useState(false);
   const [landingFaqError, setLandingFaqError] = useState('');
-  const [landingTroubleshooting, setLandingTroubleshooting] = useState([]);
-  const [landingTroubleshootingLoading, setLandingTroubleshootingLoading] = useState(false);
-  const [landingTroubleshootingError, setLandingTroubleshootingError] = useState('');
   /** Active question category names from API — same order as FAQ → Question Categories (public). */
   const [faqQuestionCategoryNames, setFaqQuestionCategoryNames] = useState([]);
   const [activeFaqCategory, setActiveFaqCategory] = useState('all');
@@ -346,17 +344,8 @@ const LandingPage = () => {
     [...list].sort((a, b) => {
       const so = (a.sort_order ?? 0) - (b.sort_order ?? 0);
       if (so !== 0) return so;
-      const kindOrder =
-        a.kind === b.kind ? 0 : a.kind === 'general' ? -1 : 1;
-      if (kindOrder !== 0) return kindOrder;
       return (Number(a.id) || 0) - (Number(b.id) || 0);
     });
-
-  const stripHtml = (html) =>
-    String(html || '')
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
 
   /** Only active categories from GET /api/faq/question-categories (same as admin public list). */
   const faqSidebarCategoryList = faqQuestionCategoryNames;
@@ -383,31 +372,17 @@ const LandingPage = () => {
       sort_order: f.sort_order ?? 0,
     }));
 
-    const fromApiTrouble = landingTroubleshooting?.length > 0;
-    const troubleshootingUnified = fromApiTrouble
-      ? landingTroubleshooting.map((p) => ({
-          key: `trouble-${p.id}`,
-          kind: 'troubleshooting',
-          id: p.id,
-          question: p.problem,
-          solutions: p.solutions || [],
-          category: String(p.category ?? '').trim(),
-          sort_order: p.sort_order ?? 0,
-        }))
-      : [];
-
-    const merged = [...generalUnified, ...troubleshootingUnified];
     const filtered =
       activeCategoryLowerSet.size === 0
-        ? merged
-        : merged.filter((row) => {
+        ? generalUnified
+        : generalUnified.filter((row) => {
             const c = String(row.category || '').trim();
             if (!c) return true;
             return activeCategoryLowerSet.has(c.toLowerCase());
           });
 
     return sortFaqAccordionItems(filtered);
-  }, [landingFaqs, landingTroubleshooting, activeCategoryLowerSet]);
+  }, [landingFaqs, activeCategoryLowerSet]);
 
   const accordionPreviewLimit = 6;
   const accordionFaqsFiltered = useMemo(() => {
@@ -465,26 +440,20 @@ const LandingPage = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      navigate(posHomePath(user));
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, user]);
 
-  // Load FAQ general + troubleshooting + question categories (same sources as /faq/* public pages).
+  // Load FAQ general + question categories (same sources as /faq/* public pages).
   useEffect(() => {
     const controller = new AbortController();
     const loadLandingFaqBundle = async () => {
       try {
         setLandingFaqLoading(true);
-        setLandingTroubleshootingLoading(true);
         setLandingFaqError('');
-        setLandingTroubleshootingError('');
 
-        const [genRes, troubRes, catRes] = await Promise.all([
+        const [genRes, catRes] = await Promise.all([
           fetch(`${API_URL}/api/faq/general`, {
-            signal: controller.signal,
-            headers: { Accept: 'application/json' },
-          }),
-          fetch(`${API_URL}/api/faq/troubleshooting`, {
             signal: controller.signal,
             headers: { Accept: 'application/json' },
           }),
@@ -513,31 +482,6 @@ const LandingPage = () => {
           setLandingFaqs([]);
         }
 
-        const troubPayload = await troubRes.json().catch(() => ({}));
-        if (troubRes.ok && Array.isArray(troubPayload?.data)) {
-          setLandingTroubleshooting(
-            troubPayload.data
-              .map((it) => ({
-                id: it.id,
-                problem: it.problem,
-                solutions: (Array.isArray(it.solutions) ? it.solutions : [])
-                  .map((s) => {
-                    if (typeof s === 'string') return s;
-                    return s?.solution ?? '';
-                  })
-                  .filter(Boolean),
-                category: it.category ?? null,
-                sort_order: it.sort_order ?? 0,
-              }))
-              .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-          );
-        } else {
-          if (!troubRes.ok) {
-            setLandingTroubleshootingError(troubPayload?.message || 'Failed to load Troubleshooting');
-          }
-          setLandingTroubleshooting([]);
-        }
-
         const catPayload = await catRes.json().catch(() => ({}));
         if (catRes.ok && Array.isArray(catPayload?.data)) {
           const names = [...catPayload.data]
@@ -552,11 +496,9 @@ const LandingPage = () => {
       } catch (e) {
         if (e?.name !== 'AbortError') {
           setLandingFaqError((prev) => prev || e?.message || 'Failed to load FAQ');
-          setLandingTroubleshootingError((prev) => prev || e?.message || 'Failed to load data');
         }
       } finally {
         setLandingFaqLoading(false);
-        setLandingTroubleshootingLoading(false);
       }
     };
 
@@ -627,7 +569,7 @@ const LandingPage = () => {
       id: 4,
       icon: FiRefreshCw,
       shortLabel: 'F&B',
-      title: 'Kitchen & Bar',
+      title: 'Menus',
       description:
         'Menu recipes, production transactions, and consumption linked back to central inventory.',
       items: [
@@ -824,7 +766,7 @@ const LandingPage = () => {
           setShowLoginModal(false);
           setShowDashboardLoader(true);
           setTimeout(() => {
-            navigate(user.password_change_required ? '/profile?forcePasswordChange=1' : '/dashboard');
+            navigate(user.password_change_required ? '/profile?forcePasswordChange=1' : posHomePath(enrichedUser));
           }, 2000);
         } else {
           setLoginError('Login failed. Invalid response from server.');
@@ -2253,13 +2195,13 @@ const LandingPage = () => {
 
             {/* FAQ Cards */}
             <div className="flex-1">
-              {(landingFaqError || landingTroubleshootingError) && !landingFaqLoading && !landingTroubleshootingLoading && (
+              {landingFaqError && !landingFaqLoading && (
                 <p className="text-sm text-red-600 dark:text-red-400 mb-4">
-                  {landingFaqError || landingTroubleshootingError}
+                  {landingFaqError}
                 </p>
               )}
 
-              {landingFaqLoading || landingTroubleshootingLoading ? (
+              {landingFaqLoading ? (
                 <div className="space-y-4">
                   {[0, 1, 2].map((i) => (
                     <div
@@ -2304,7 +2246,7 @@ const LandingPage = () => {
                                 darkMode ? 'text-white' : 'text-gray-900'
                               }`}
                             >
-                              {faq.kind === 'troubleshooting' ? stripHtml(faq.question) : faq.question}
+                              {faq.question}
                             </h3>
                           </div>
                           <FiChevronDown
@@ -2324,37 +2266,13 @@ const LandingPage = () => {
                               darkMode ? 'border-gray-700' : 'border-gray-200'
                             }`}
                           >
-                            {faq.kind === 'troubleshooting' ? (
-                              faq.solutions?.length ? (
-                                <ul
-                                  className={`leading-relaxed list-disc ml-6 ${
-                                    darkMode ? 'text-gray-300' : 'text-gray-700'
-                                  }`}
-                                >
-                                  {faq.solutions.map((s, idx) => (
-                                    <li key={`${faq.key}-s-${idx}`} className="mb-1">
-                                      <span
-                                        dangerouslySetInnerHTML={{
-                                          __html: typeof s === 'string' ? s : s?.solution || '',
-                                        }}
-                                      />
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <p className={`leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                  —
-                                </p>
-                              )
-                            ) : (
-                              <div
-                                className={`leading-relaxed ${
-                                  darkMode ? 'text-gray-300' : 'text-gray-700'
-                                }`}
-                                // answer is stored HTML from the rich editor
-                                dangerouslySetInnerHTML={{ __html: faq.answer || '' }}
-                              />
-                            )}
+                            <div
+                              className={`leading-relaxed ${
+                                darkMode ? 'text-gray-300' : 'text-gray-700'
+                              }`}
+                              // answer is stored HTML from the rich editor
+                              dangerouslySetInnerHTML={{ __html: faq.answer || '' }}
+                            />
                           </div>
                         </div>
                       </div>

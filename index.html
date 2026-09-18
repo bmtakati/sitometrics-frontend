@@ -13,9 +13,11 @@
           var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
           var dark = preference === 'dark' || (preference === 'system' && prefersDark) || (!preference && (legacy === 'true' || (legacy === null && prefersDark)));
           document.documentElement.classList.toggle('dark', dark);
+          document.body.classList.toggle('dark', dark);
           localStorage.setItem('darkMode', dark ? 'true' : 'false');
         } catch (error) {
           document.documentElement.classList.remove('dark');
+          document.body.classList.remove('dark');
         }
       })();
     </script>

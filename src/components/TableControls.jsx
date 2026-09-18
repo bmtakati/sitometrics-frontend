@@ -173,6 +173,19 @@ const TableControls = ({
               </div>
             )}
 
+            {extraFilters?.map((ef, idx) => (
+              <div key={idx} className="relative z-30 min-w-0 lg:w-52">
+                <SearchableSelect
+                  options={ef.options ?? []}
+                  value={ef.value}
+                  onChange={ef.onChange}
+                  placeholder={ef.placeholder}
+                  darkMode={darkMode}
+                  size="compact"
+                />
+              </div>
+            ))}
+
             {/* Clear Filters Button */}
             {hasActiveFilters && (
               <button
@@ -210,27 +223,9 @@ const TableControls = ({
           </div>
         </div>
 
-        {/* Row 2: Extra filters / Email filter (only when present) */}
-        {(extraFilters?.length > 0 || emailFilter) && (
+        {/* Row 2: Email filter (only when present) */}
+        {emailFilter && (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-end">
-            {/* Extra Filters (geo dropdowns etc.) */}
-            {extraFilters && extraFilters.map((ef, idx) => (
-              <div key={idx} className="relative z-30 min-w-0 lg:w-52 lg:shrink-0">
-                {ef.label && (
-                  <label className={`mb-1 block text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-stone-500'}`}>
-                    {ef.label}
-                  </label>
-                )}
-                <SearchableSelect
-                  options={ef.options ?? []}
-                  value={ef.value}
-                  onChange={ef.onChange}
-                  darkMode={darkMode}
-                  size="compact"
-                />
-              </div>
-            ))}
-
             {/* Email Filter */}
             {emailFilter && (
               <div className="grid grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-[minmax(0,1fr)_auto_auto] lg:flex lg:items-center lg:flex-wrap">

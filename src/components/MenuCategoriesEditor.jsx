@@ -64,6 +64,88 @@ const MenuCategoriesEditor = ({
     updateLines(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
   };
 
+  const lineTypeOf = (line) => line.category_type || (menuScope === 'BEVERAGE' ? 'BEVERAGE' : 'FOOD');
+
+  const nextOrderNo = (rows) => {
+    const max = rows.reduce((highest, row) => Math.max(highest, Number(row.order_no) || 0), 0);
+    return String(max + 1);
+  };
+
+  const handleCategoryChange = (lineIndex, lineType, nextCategoryId) => {
+    const nextId = nextCategoryId ? String(nextCategoryId) : '';
+    const line = lines[lineIndex];
+    const currentId = line.category_id ? String(line.category_id) : '';
+
+    if (nextId === currentId && lineTypeOf(line) === lineType) return;
+
+    if (!nextId) {
+      if ((line.items || []).length > 0) return;
+      updateLine(lineIndex, { category_id: '' });
+      return;
+    }
+
+    const hasItems = (line.items || []).length > 0;
+    const duplicateIndex = lines.findIndex(
+      (row, i) => i !== lineIndex && lineTypeOf(row) === lineType && String(row.category_id) === nextId
+    );
+
+    if (!hasItems) {
+      if (duplicateIndex >= 0) {
+        const next = lines.filter((_, i) => i !== lineIndex);
+        updateLines(next.length ? next : [emptyCategoryLine(menuScope)]);
+        return;
+      }
+      updateLine(lineIndex, {
+        category_type: lineType,
+        category_id: nextId,
+        order_no: Number(line.order_no) > 0 ? line.order_no : nextOrderNo(lines.filter((_, i) => i !== lineIndex)),
+      });
+      return;
+    }
+
+    const preservedOrder =
+      Number(line.order_no) > 0 ? String(line.order_no) : nextOrderNo(lines.filter((_, i) => i !== lineIndex));
+    const preserved = {
+      ...line,
+      category_type: lineTypeOf(line),
+      category_id: currentId,
+      order_no: preservedOrder,
+    };
+
+    if (duplicateIndex >= 0) {
+      const existing = lines[duplicateIndex];
+      updateLines(
+        lines.map((row, i) => {
+          if (i === lineIndex) {
+            return {
+              ...existing,
+              category_type: lineType,
+              category_id: nextId,
+              order_no: Number(existing.order_no) > 0 ? existing.order_no : nextOrderNo([preserved]),
+            };
+          }
+          if (i === duplicateIndex) return preserved;
+          return row;
+        })
+      );
+      return;
+    }
+
+    const pickerOrder = nextOrderNo([...lines.filter((_, i) => i !== lineIndex), { order_no: preservedOrder }]);
+    const next = lines.map((row, i) =>
+      i === lineIndex
+        ? {
+            ...emptyCategoryLine(menuScope),
+            category_type: lineType,
+            category_id: nextId,
+            order_no: pickerOrder,
+            items: [],
+          }
+        : row
+    );
+    updateLines([...next, preserved]);
+  };
+
   const addLine = () => {
     const nextOrder = lines.length ? Math.max(...lines.map((line) => Number(line.order_no) || 0)) + 1 : 1;
     updateLines([...lines, { ...emptyCategoryLine(menuScope), order_no: String(nextOrder) }]);
@@ -93,7 +175,10 @@ const MenuCategoriesEditor = ({
       };
     });
 
-    updateLine(lineIndex, { items });
+    updateLine(lineIndex, {
+      items,
+      order_no: Number(line.order_no) > 0 ? line.order_no : nextOrderNo(lines.filter((_, i) => i !== lineIndex)),
+    });
   };
 
   const removeItem = (lineIndex, lineType, itemId) => {
@@ -199,7 +284,33 @@ const MenuCategoriesEditor = ({
                     <SearchableSelect
                       options={CATEGORY_TYPE_OPTIONS}
                       value={lineType}
-                      onChange={(val) => updateLine(index, { category_type: val, category_id: '', items: [] })}
+                      onChange={(val) => {
+                        if (val === lineType) return;
+                        if ((line.items || []).length > 0) {
+                          const preserved = {
+                            ...line,
+                            category_type: lineTypeOf(line),
+                            order_no:
+                              Number(line.order_no) > 0
+                                ? line.order_no
+                                : nextOrderNo(lines.filter((_, i) => i !== index)),
+                          };
+                          const next = lines.map((row, i) =>
+                            i === index
+                              ? {
+                                  ...emptyCategoryLine(menuScope),
+                                  category_type: val,
+                                  category_id: '',
+                                  order_no: nextOrderNo([...lines.filter((_, i) => i !== index), preserved]),
+                                  items: [],
+                                }
+                              : row
+                          );
+                          updateLines([...next, preserved]);
+                          return;
+                        }
+                        updateLine(index, { category_type: val, category_id: '', items: [] });
+                      }}
                       placeholder="Type…"
                       darkMode={darkMode}
                       size="compact"
@@ -208,9 +319,7 @@ const MenuCategoriesEditor = ({
                   <SearchableSelect
                     options={optionsForType(lineType)}
                     value={line.category_id ? String(line.category_id) : ''}
-                    onChange={(val) =>
-                      updateLine(index, { category_type: lineType, category_id: val, items: [] })
-                    }
+                    onChange={(val) => handleCategoryChange(index, lineType, val)}
                     placeholder="Select category…"
                     darkMode={darkMode}
                     size="compact"

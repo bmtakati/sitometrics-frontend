@@ -1,8 +1,5 @@
-import React from 'react';
-import AllNotifications from './AllNotifications';
+import { NotificationsRedirect } from './Notifications';
 
-const Unread = () => {
-  return <AllNotifications filterDefault="unread" />;
-};
+const Unread = () => <NotificationsRedirect tab="unread" />;
 
 export default Unread;
